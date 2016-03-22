@@ -1,5 +1,6 @@
 package shared;
 
-public enum OperationType {
+public enum OperationType
+{
 	FIB, PRIME
 }

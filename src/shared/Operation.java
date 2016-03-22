@@ -1,6 +1,5 @@
-package repartiteur;
+package shared;
 
-import repartiteur.OperationType;
 
 public class Operation
 {
