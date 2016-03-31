@@ -20,26 +20,30 @@ import ca.polymtl.inf4410.tp2.shared.*;
 public class Calculateur implements ServerInterface {
 	private int tauxMalicieux;
 	private int nbOperationsMax;
+	private int port;
 	
-	public Calculateur(int txMalicieux, int nbOpMax) {
+	public Calculateur(int txMalicieux, int nbOpMax, int p) {
 		tauxMalicieux = txMalicieux;
 		nbOperationsMax = nbOpMax;
+		port = p;
+		
 	}
 	
 	// utilisation:
 	//		./Calculateur txMalicieux nbOperationsMaximum
 	public static void main(String[] args)
 	{
-		if (args.length == 0 || args.length == 1) 
+		if (args.length < 3) 
 		{
 			System.out.println("Invalid number of arguments");
 		}
-		else if (args.length == 2)
+		else if (args.length == 3)
 		{
 			try {  
 		         int txMalicieux = Integer.parseInt(args[0]);  
 		         int nbOpMax = Integer.parseInt(args[1]);  
-		         Calculateur c = new Calculateur(txMalicieux, nbOpMax);
+		         int port = Integer.parseInt(args[2]);
+		         Calculateur c = new Calculateur(txMalicieux, nbOpMax, port);
 		         c.run();
 		      } catch (NumberFormatException e) {  
 		    	  throw new IllegalArgumentException("Invalid argument");
@@ -87,7 +91,7 @@ public class Calculateur implements ServerInterface {
 		try {
 			ServerInterface stub = (ServerInterface) UnicastRemoteObject.exportObject(this, 0);
 
-			Registry registry = LocateRegistry.getRegistry();
+			Registry registry = LocateRegistry.getRegistry(this.port);
 			registry.rebind("server", stub);
 			System.out.println("Server ready.");
 		} catch (ConnectException e) {
