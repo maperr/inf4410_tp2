@@ -1,4 +1,4 @@
-package calculateur;
+package ca.polymtl.inf4410.tp2.calculateur;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -13,9 +13,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import repartiteur.Repartiteur;
-import repartiteur.ServerDetails;
-import shared.*;
+import ca.polymtl.inf4410.tp2.repartiteur.Repartiteur;
+import ca.polymtl.inf4410.tp2.repartiteur.ServerDetails;
+import ca.polymtl.inf4410.tp2.shared.*;
 
 public class Calculateur implements ServerInterface {
 	private int tauxMalicieux;

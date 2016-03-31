@@ -1,4 +1,4 @@
-package repartiteur;
+package ca.polymtl.inf4410.tp2.repartiteur;
 
 public class ServerDetails {
 	public int port;

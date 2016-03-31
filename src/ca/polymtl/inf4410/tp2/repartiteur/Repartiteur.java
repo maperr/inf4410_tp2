@@ -1,6 +1,6 @@
-package repartiteur;
+package ca.polymtl.inf4410.tp2.repartiteur;
 
-import shared.*;
+import ca.polymtl.inf4410.tp2.shared.*;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -20,9 +20,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Observable;
+import java.util.Observer;
 import java.util.Queue;
+import java.util.concurrent.atomic.AtomicInteger;
 
-public class Repartiteur {
+public class Repartiteur implements Observer{
 	
 	private List<Operation> operations;
 	private ArrayList<ServerDetails> serversDetails; 
@@ -30,9 +33,9 @@ public class Repartiteur {
 	private Boolean isModeSecurise;
 	private List<CalculateurThread> calcThreads;
 	
-	private Map unexecutedTasksToThreads;
+	protected HashMap unexecutedTasksToThreads;
 	
-	private int result; // used asynchronously, use mutexes.
+	private AtomicInteger result; // used asynchronously, use mutexes.
 	
 	/*
 	 * utilisation:
@@ -84,7 +87,7 @@ public class Repartiteur {
 		isModeSecurise = Boolean.valueOf(modeSecurise);
 	}
 	
-	public void run() throws RemoteException 
+	public void run() // throws RemoteException 
 	{
 		// thread pour chaque serveur
 		// check 50% + 1 si tous d'accord (majorite) -> continue sinon envoie a un autre
@@ -101,6 +104,8 @@ public class Repartiteur {
 			calculateurs.add(loadServerStub(si.ip_address));
 		}
 		
+		result.set(0);
+		
 		if(isModeSecurise) 
 		{
 			// split the operations in different tasks (group of operations) to be executed on threads
@@ -108,7 +113,7 @@ public class Repartiteur {
 			
 			// Initialize and fill the atomic hashmap <task, threadId> where threadId is the index of the threads 
 			// that tried running said task.
-			unexecutedTasksToThreads = Collections.synchronizedMap(new HashMap<List<Operation>, List<Integer>>());
+			unexecutedTasksToThreads = (HashMap) Collections.synchronizedMap(new HashMap<List<Operation>, List<Integer>>());
 			for(List<Operation> tache : list_operations) 
 			{
 				unexecutedTasksToThreads.put(tache, new ArrayList<Integer>());
@@ -118,11 +123,11 @@ public class Repartiteur {
 			// it doesn't add it back to it.
 			for(int i = 0; i < calculateurs.size(); i++) 
 			{
-				calcThreads.add(new CalculateurThread(list_operations.get(i), i));
+			    calcThreads.add(new CalculateurThread(calculateurs.get(i), unexecutedTasksToThreads, list_operations.get(i), i, result));
 			}
 			
-			// Wait for all the threads to finish their current task and for the hashmap of unexecuted tasks to be empty
-			
+			// Wait for child to finish ?
+			System.out.println("Result is :" + result.get());
 		}
 		else 
 		{
@@ -208,6 +213,12 @@ public class Repartiteur {
 	        parts.add(new ArrayList<Operation>(list.subList(i, Math.min(list.size(), i + nbLists))));
 	    }
 	    return parts;
+	}
+
+	@Override
+	public void update(Observable o, Object arg) {
+		// TODO Auto-generated method stub
+		
 	}
 	
 }
