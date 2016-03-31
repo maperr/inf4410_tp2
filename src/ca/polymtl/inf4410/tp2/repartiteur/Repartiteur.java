@@ -33,7 +33,7 @@ public class Repartiteur implements Observer{
 	private Boolean isModeSecurise;
 	private List<CalculateurThread> calcThreads;
 	
-	protected HashMap unexecutedTasksToThreads;
+	protected Map unexecutedTasksToThreads;
 	
 	private AtomicInteger result; // used asynchronously, use mutexes.
 	
@@ -79,6 +79,7 @@ public class Repartiteur implements Observer{
 	public Repartiteur(String operationsFile, String serverFile, String modeSecurise) 
 	{
 	        this.calculateurs = new ArrayList<>();
+	        this.calcThreads = new ArrayList<>();
 	    
 		File opFile = Repartiteur.getFilePath(operationsFile).toFile();
 		operations = getOperationsFromFile(opFile);
@@ -124,7 +125,7 @@ public class Repartiteur implements Observer{
 			
 			// Initialize and fill the atomic hashmap <task, threadId> where threadId is the index of the threads 
 			// that tried running said task.
-			unexecutedTasksToThreads = (HashMap) Collections.synchronizedMap(new HashMap<List<Operation>, List<Integer>>());
+			unexecutedTasksToThreads = Collections.synchronizedMap(new HashMap<List<Operation>, List<Integer>>());
 			for(List<Operation> tache : list_operations) 
 			{
 				unexecutedTasksToThreads.put(tache, new ArrayList<Integer>());

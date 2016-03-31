@@ -4,6 +4,7 @@ import java.rmi.RemoteException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Observable;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -16,22 +17,19 @@ class CalculateurThread extends Observable implements Runnable
     private ServerInterface server; // The reference to the remote server on which the task will be done
 	private List<Operation> operations; // The said task
 	private int identifiant;  // Identifier provided by the main thread
-	private HashMap<List<Operation>, List<Integer>> parentUnexecutedTasks;
+	private Map parentUnexecutedTasks;
 	private AtomicInteger resultRef;
-	
-    public CalculateurThread(ServerInterface serv, HashMap<List<Operation>,
-    		List<Integer>> unexecutedTasksToThreads,
-    		List<Operation> ops,
-    		int id,
-    		AtomicInteger res)
-	{
+
+	public CalculateurThread(ServerInterface serv,
+			Map unexecutedTasksToThreads, List<Operation> ops, int i,
+			AtomicInteger result) {
 		operations = ops;
 		server = serv;
-		identifiant = id;
+		identifiant = i;
 		parentUnexecutedTasks = unexecutedTasksToThreads;
-		resultRef = res;
+		resultRef = result;
 	}
-	
+
 	public int getIdentifiant()
 	{
 		return identifiant;
@@ -45,7 +43,7 @@ class CalculateurThread extends Observable implements Runnable
 	
 		// TODO: Should check the concurrency on the list
 		// Save the list
-		List<Integer> currentMapStatus = parentUnexecutedTasks.get(operations);
+		List<Integer> currentMapStatus = (List<Integer>) parentUnexecutedTasks.get(operations);
 		// Remove task from map
 		synchronized(parentUnexecutedTasks){
 			parentUnexecutedTasks.remove(operations);
