@@ -105,7 +105,7 @@ public class Repartiteur implements Observer{
 		
 		for(ServerDetails si : serversDetails)
 		{
-			calculateurs.add(loadServerStub(si.ip_address));
+			calculateurs.add(loadServerStub(si.ip_address, si.port));
 		}
 
 		try {
@@ -148,11 +148,11 @@ public class Repartiteur implements Observer{
 		
 	}
 	
-	private ServerInterface loadServerStub(String hostname) {
+	private ServerInterface loadServerStub(String hostname, int port) {
 		ServerInterface stub = null;
 
 		try {
-			Registry registry = LocateRegistry.getRegistry(hostname);
+			Registry registry = LocateRegistry.getRegistry(hostname, port);
 			stub = (ServerInterface) registry.lookup("server");
 		} catch (NotBoundException e) {
 			System.out.println("Erreur: Le nom '" + e.getMessage()
