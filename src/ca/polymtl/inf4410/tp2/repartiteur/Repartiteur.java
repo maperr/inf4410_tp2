@@ -78,6 +78,8 @@ public class Repartiteur implements Observer{
 	
 	public Repartiteur(String operationsFile, String serverFile, String modeSecurise) 
 	{
+	        this.calculateurs = new ArrayList<>();
+	    
 		File opFile = Repartiteur.getFilePath(operationsFile).toFile();
 		operations = getOperationsFromFile(opFile);
 		
@@ -85,6 +87,7 @@ public class Repartiteur implements Observer{
 		serversDetails = getServerDetailsFromFile(sFile);
 		
 		isModeSecurise = Boolean.valueOf(modeSecurise);
+		result = new AtomicInteger();
 	}
 	
 	public void run() // throws RemoteException 
@@ -103,7 +106,15 @@ public class Repartiteur implements Observer{
 		{
 			calculateurs.add(loadServerStub(si.ip_address));
 		}
-		
+
+		try {
+		    String res = calculateurs.get(0).echo("YOYOYO");
+		    System.out.println(res);
+		} catch (RemoteException e) {
+		    System.out.println(e.getMessage());
+		} catch (NullPointerException ne) {
+		    System.out.println(ne.getMessage());
+		}
 		result.set(0);
 		
 		if(isModeSecurise) 
@@ -163,7 +174,8 @@ public class Repartiteur implements Observer{
 		    while ((line = br.readLine()) != null) 
 		    {
 		    	String[] splited = line.split(" ");
-		    	servers.add(new ServerDetails(splited[0], Integer.parseInt(splited[1]), Integer.parseInt(splited[2]), Integer.parseInt(splited[3])));
+			System.out.println(splited[0] + " : " + splited[1]);
+		    	servers.add(new ServerDetails(splited[0], Integer.parseInt(splited[1])));
 		    }
 		}
 		catch (IOException e) 

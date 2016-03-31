@@ -181,5 +181,7 @@ public class Calculateur implements ServerInterface {
 		
 		return result;
 	}
-
+    public String echo(String theString) throws RemoteException {
+	return "Returns :" + theString;
+    }
 }
