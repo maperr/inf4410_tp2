@@ -14,13 +14,15 @@ class CalculateurThread extends Observable implements Runnable
 {
 	private TaskStatus status;
 	
-    private ServerInterface server; // The reference to the remote server on which the task will be done
+        private ServerInterface server; // The reference to the remote server on which the task will be done
 	private List<Operation> operations; // The said task
 	private int identifiant;  // Identifier provided by the main thread
 	private Map parentUnexecutedTasks;
 	private AtomicInteger resultRef;
-
-	public CalculateurThread(ServerInterface serv,
+        private static final Boolean SHOW_DEBUG_INFO = true;
+        private String myHeader;
+	
+        public CalculateurThread(ServerInterface serv,
 			Map unexecutedTasksToThreads, List<Operation> ops, int i,
 			AtomicInteger result) {
 		operations = ops;
@@ -28,6 +30,7 @@ class CalculateurThread extends Observable implements Runnable
 		identifiant = i;
 		parentUnexecutedTasks = unexecutedTasksToThreads;
 		resultRef = result;
+		myHeader = "Thread["+identifiant+"] :";
 	}
 
 	public int getIdentifiant()
@@ -36,8 +39,12 @@ class CalculateurThread extends Observable implements Runnable
 	}
 	
 	@Override
-    public void run()
+	public void run()
 	{
+
+	    if (SHOW_DEBUG_INFO) {
+		System.out.println(myHeader + "I have been created !");
+	    }
 		status = TaskStatus.SUBMITTED;
 		int res = -1;		
 	
@@ -57,9 +64,16 @@ class CalculateurThread extends Observable implements Runnable
 	    	// Do something clever like throwing a message to main thread
 	    	System.out.println(e.getMessage());
 	    	status = TaskStatus.REJECTED_LOAD;
+	    } catch (NullPointerException npe) {
+		if (server == null)
+		    System.out.println("The server stub you tried to reach is not defined");
+		else
+		    System.out.println(npe.getMessage());
 	    }
 	    
 	    if (status == TaskStatus.REJECTED_LOAD) {
+		if (SHOW_DEBUG_INFO)
+		    System.out.println(myHeader + " Task was rejected");
 	    	// Put back the task into the map
 	    	currentMapStatus.add(identifiant);
 	    	synchronized (parentUnexecutedTasks) {
@@ -67,6 +81,8 @@ class CalculateurThread extends Observable implements Runnable
 			}
 	    	
 	    } else if (status == TaskStatus.DONE) {
+		if (SHOW_DEBUG_INFO)
+		    System.out.println(myHeader + " we have " + resultRef);
 	    	// Shouldn't do something || Notify the result ?
 	    	resultRef.getAndAdd(res % 5000);
 	    }

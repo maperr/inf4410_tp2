@@ -31,9 +31,11 @@ public class Repartiteur implements Observer{
 	private ArrayList<ServerDetails> serversDetails; 
 	private ArrayList<ServerInterface> calculateurs;
 	private Boolean isModeSecurise;
-	private List<CalculateurThread> calcThreads;
-	
+       //private List<CalculateurThread> calcThreads;
+        private List<Thread> calcThreads;
 	protected Map unexecutedTasksToThreads;
+
+        private static final Boolean SHOW_DEBUG_INFO = true;
 	
 	private AtomicInteger result; // used asynchronously, use mutexes.
 	
@@ -123,6 +125,10 @@ public class Repartiteur implements Observer{
 			// split the operations in different tasks (group of operations) to be executed on threads
 			List<List<Operation>> list_operations = splitList(operations, calculateurs.size());
 			
+			// Print the task list 
+			if (SHOW_DEBUG_INFO)
+			    PrintTasksList(list_operations);
+			
 			// Initialize and fill the atomic hashmap <task, threadId> where threadId is the index of the threads 
 			// that tried running said task.
 			unexecutedTasksToThreads = Collections.synchronizedMap(new HashMap<List<Operation>, List<Integer>>());
@@ -135,9 +141,22 @@ public class Repartiteur implements Observer{
 			// it doesn't add it back to it.
 			for(int i = 0; i < calculateurs.size(); i++) 
 			{
-			    calcThreads.add(new CalculateurThread(calculateurs.get(i), unexecutedTasksToThreads, list_operations.get(i), i, result));
+			    if (SHOW_DEBUG_INFO)
+				System.out.println("Creating thread " + i);
+			    Thread d = new Thread(new CalculateurThread(calculateurs.get(i), unexecutedTasksToThreads, list_operations.get(i), i, result));
+			    //calcThreads.add(new CalculateurThread(calculateurs.get(i), unexecutedTasksToThreads, list_operations.get(i), i, result));
+			    calcThreads.add(d);
 			}
-			
+			try {
+			    calcThreads.get(0).start();
+			    while (calcThreads.get(0).isAlive()) {
+				threadMessage("Still waiting");
+				// Wait 10 seconds
+				calcThreads.get(0).join(10000);
+			    }
+			} catch (InterruptedException e) {
+			    System.out.println(e.getMessage());
+			}
 			// Wait for child to finish ?
 			System.out.println("Result is :" + result.get());
 		}
@@ -148,6 +167,15 @@ public class Repartiteur implements Observer{
 		
 	}
 	
+    private void PrintTasksList(List<List<Operation>> listOfOps) {
+	for (int i = 0; i < listOfOps.size() ; i++) {
+	    System.out.println("Task " + i + ":");
+	    for (int j = 0; j < listOfOps.get(i).size() ; j++) {
+		System.out.println("\t " + (listOfOps.get(i).get(j).type == OperationType.FIB ? " Fib " : "Prime ") + listOfOps.get(i).get(j).value);
+	    }
+	}
+    }
+
 	private ServerInterface loadServerStub(String hostname, int port) {
 		ServerInterface stub = null;
 
@@ -234,4 +262,14 @@ public class Repartiteur implements Observer{
 		
 	}
 	
+
+    // Display a message, preceded by
+    // the name of the current thread
+    static void threadMessage(String message) {
+        String threadName =
+            Thread.currentThread().getName();
+        System.out.format("%s: %s%n",
+                          threadName,
+                          message);
+    }
 }
