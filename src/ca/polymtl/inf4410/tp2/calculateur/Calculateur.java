@@ -30,7 +30,7 @@ public class Calculateur implements ServerInterface {
 	//		./Calculateur txMalicieux nbOperationsMaximum
 	public static void main(String[] args)
 	{
-		if (args.length <= 1) 
+		if (args.length == 0 || args.length == 1) 
 		{
 			System.out.println("Invalid number of arguments");
 		}
