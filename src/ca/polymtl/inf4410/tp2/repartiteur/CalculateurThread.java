@@ -59,7 +59,9 @@ class CalculateurThread extends Observable implements Runnable
 	    try {
 	    	status = TaskStatus.WORKING;
 	    	res = server.executeTask(operations);
-	    	status = TaskStatus.DONE;
+		if (SHOW_DEBUG_INFO)
+		    System.out.println(myHeader + " result from RMI call is " + res);
+		status = TaskStatus.DONE;
 	    } catch (RemoteException e) {
 	    	// Do something clever like throwing a message to main thread
 	    	System.out.println(e.getMessage());
@@ -82,7 +84,7 @@ class CalculateurThread extends Observable implements Runnable
 	    	
 	    } else if (status == TaskStatus.DONE) {
 		if (SHOW_DEBUG_INFO)
-		    System.out.println(myHeader + " we have " + resultRef);
+		    System.out.println(myHeader + " Adding " + res + "to current res(" + resultRef.get() + ") and applying % 5000");
 	    	// Shouldn't do something || Notify the result ?
 	    	resultRef.getAndAdd(res % 5000);
 	    }

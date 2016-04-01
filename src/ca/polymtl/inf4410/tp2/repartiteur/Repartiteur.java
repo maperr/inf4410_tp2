@@ -171,7 +171,7 @@ public class Repartiteur implements Observer{
 	for (int i = 0; i < listOfOps.size() ; i++) {
 	    System.out.println("Task " + i + ":");
 	    for (int j = 0; j < listOfOps.get(i).size() ; j++) {
-		System.out.println("\t " + (listOfOps.get(i).get(j).type == OperationType.FIB ? " Fib " : "Prime ") + listOfOps.get(i).get(j).value);
+		System.out.println("\t " + (listOfOps.get(i).get(j).type == 0 ? " Fib " : "Prime ") + listOfOps.get(i).get(j).value);
 	    }
 	}
     }
@@ -223,14 +223,17 @@ public class Repartiteur implements Observer{
 		    while ((line = br.readLine()) != null) 
 		    {
 		    	String[] splited = line.split(" ");
-		    	OperationType type;
-		    	if(splited[0].equals("fib")) 
+		    	// OperationType type;
+			int type;
+			if(splited[0].equals("fib")) 
 		    	{
-		    		type = OperationType.FIB;
+			    //type = OperationType.FIB;
+			        type = 0;
 		    	} 
 		    	else if (splited[0].equals("prime")) 
 		    	{
-		    		type = OperationType.PRIME;
+			    // type = OperationType.PRIME;
+			        type = 1;
 		    	} 
 		    	else
 		    	{
