@@ -48,13 +48,6 @@ class CalculateurThread extends Observable implements Runnable
 		status = TaskStatus.SUBMITTED;
 		int res = -1;		
 	
-		// TODO: Should check the concurrency on the list
-		// Save the list
-		List<Integer> currentMapStatus = (List<Integer>) parentUnexecutedTasks.get(operations);
-		// Remove task from map
-		synchronized(parentUnexecutedTasks){
-			parentUnexecutedTasks.remove(operations);
-		}
 		
 	    try {
 	    	status = TaskStatus.WORKING;
@@ -76,17 +69,26 @@ class CalculateurThread extends Observable implements Runnable
 	    if (status == TaskStatus.REJECTED_LOAD) {
 		if (SHOW_DEBUG_INFO)
 		    System.out.println(myHeader + " Task was rejected");
-	    	// Put back the task into the map
-	    	currentMapStatus.add(identifiant);
-	    	synchronized (parentUnexecutedTasks) {
-	    		parentUnexecutedTasks.put(operations, currentMapStatus);
-			}
+	    	// // Put back the task into the map
+	    	// currentMapStatus.add(identifiant);
+	    	// synchronized (parentUnexecutedTasks) {
+	    	// 	parentUnexecutedTasks.put(operations, currentMapStatus);
+		// 	}
 	    	
 	    } else if (status == TaskStatus.DONE) {
+		// TODO: Should check the concurrency on the list
+		// Save the list
+		List<Integer> currentMapStatus = (List<Integer>) parentUnexecutedTasks.get(operations);
+		// Remove task from map
+		synchronized(parentUnexecutedTasks){
+			parentUnexecutedTasks.remove(operations);
+		}
+		
 		if (SHOW_DEBUG_INFO)
 		    System.out.println(myHeader + " Adding " + res + "to current res(" + resultRef.get() + ") and applying % 5000");
 	    	// Shouldn't do something || Notify the result ?
-	    	resultRef.getAndAdd(res % 5000);
+		resultRef.getAndAdd(res % 5000);
+		resultRef.set(resultRef.get() % 5000);
 	    }
 	    
 	    // TODO Tell main thread of the result

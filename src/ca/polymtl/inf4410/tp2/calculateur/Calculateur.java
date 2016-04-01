@@ -78,8 +78,9 @@ public class Calculateur implements ServerInterface {
 			        System.out.println("Doing prime("+op.value+") | ");
 				current = prime(op.value);
 			}
-			current = current % 5000;
+			// current = current % 5000;
 			sum += current;
+			sum %= 5000;
 		}
 
 		System.out.println("My task consisting of " + x.size() + " tasks is equal to " + sum);

@@ -107,9 +107,18 @@ public class Repartiteur implements Observer{
 		
 		for(ServerDetails si : serversDetails)
 		{
-			calculateurs.add(loadServerStub(si.ip_address, si.port));
+		    try{
+		        calculateurs.add(loadServerStub(si.ip_address, si.port));
+		    } catch (NotBoundException e) {
+			// We don't even add the stub to the thing
+			System.out.println("Server stub at" + si.ip_address + ":" + si.port + " is unreachable, not adding to the servers to reach");
+		    }
 		}
 
+		if (SHOW_DEBUG_INFO) {
+		    System.out.println("We have " + calculateurs.size() + " servers");
+		}
+		
 		try {
 		    String res = calculateurs.get(0).echo("YOYOYO");
 		    System.out.println(res);
@@ -181,19 +190,22 @@ public class Repartiteur implements Observer{
 	}
     }
 
-	private ServerInterface loadServerStub(String hostname, int port) {
+	private ServerInterface loadServerStub(String hostname, int port) throws NotBoundException {
 		ServerInterface stub = null;
 
 		try {
 			Registry registry = LocateRegistry.getRegistry(hostname, port);
 			stub = (ServerInterface) registry.lookup("server");
 		} catch (NotBoundException e) {
-			System.out.println("Erreur: Le nom '" + e.getMessage()
-					+ "' n'est pas defini dans le registre.");
+			// System.out.println("Erreur: Le nom '" + e.getMessage()
+			//		+ "' n'est pas defini dans le registre.");
+			throw new NotBoundException();
 		} catch (AccessException e) {
-			System.out.println("Erreur: " + e.getMessage());
+		    //System.out.println("Erreur: " + e.getMessage());
+			throw new NotBoundException();
 		} catch (RemoteException e) {
-			System.out.println("Erreur: " + e.getMessage());
+		    //System.out.println("Erreur: " + e.getMessage());
+			throw new NotBoundException();
 		}
 
 		return stub;
