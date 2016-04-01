@@ -5,7 +5,7 @@ popd > /dev/null
 # Option a ajustet et ajouter pour lancer un serveur a distance.
 
 java -cp "$basepath"/calculateur.jar:"$basepath"/shared.jar \
-  -Djava.rmi.server.hostname=l4712-25.info.polymtl.ca \
+  -Djava.rmi.server.hostname=$(hostname) \
   -Djava.rmi.server.codebase=file:"$basepath"/shared.jar \
   -Djava.security.policy="$basepath"/policy \
   ca.polymtl.inf4410.tp2.calculateur.Calculateur $*
