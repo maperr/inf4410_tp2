@@ -148,11 +148,16 @@ public class Repartiteur implements Observer{
 			    calcThreads.add(d);
 			}
 			try {
-			    calcThreads.get(0).start();
-			    while (calcThreads.get(0).isAlive()) {
+			    for (Thread t : calcThreads)
+				t.start();
+			    //calcThreads.get(0).start();
+			    //while (calcThreads.get(0).isAlive()) {
+			    while (!unexecutedTasksToThreads.isEmpty()) {
 				threadMessage("Still waiting");
 				// Wait 10 seconds
-				calcThreads.get(0).join(10000);
+				for (Thread t : calcThreads)
+				    t.join(5000);
+				// calcThreads.get(0).join(10000);
 			    }
 			} catch (InterruptedException e) {
 			    System.out.println(e.getMessage());

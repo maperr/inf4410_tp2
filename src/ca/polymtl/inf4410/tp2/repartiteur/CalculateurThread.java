@@ -42,9 +42,9 @@ class CalculateurThread extends Observable implements Runnable
 	public void run()
 	{
 
-	    if (SHOW_DEBUG_INFO) {
-		System.out.println(myHeader + "I have been created !");
-	    }
+	        if (SHOW_DEBUG_INFO) {
+		    System.out.println(myHeader + "I have been created with task of size " + operations.size());
+		}
 		status = TaskStatus.SUBMITTED;
 		int res = -1;		
 	
