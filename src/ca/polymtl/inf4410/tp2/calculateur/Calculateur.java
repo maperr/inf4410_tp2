@@ -30,7 +30,7 @@ public class Calculateur implements ServerInterface {
 	}
 	
 	// utilisation:
-	//		./Calculateur txMalicieux nbOperationsMaximum
+	//		./Calculateur txMalicieux nbOperationsMaximum portDuRegistry
 	public static void main(String[] args)
 	{
 		if (args.length < 3) 
@@ -70,12 +70,12 @@ public class Calculateur implements ServerInterface {
 			//if (op.type == OperationType.FIB)
 			if (op.type == 0) 
 			{
-			    System.out.println("Doing fib("+op.value+")");
+			        System.out.println("Doing fib("+op.value+")");
 				current = fib(op.value); 
 			} 
 			else 
 			{
-			        System.out.println("Doing prime("+op.value+")");
+			        System.out.println("Doing prime("+op.value+") | ");
 				current = prime(op.value);
 			}
 			current = current % 5000;
@@ -109,7 +109,7 @@ public class Calculateur implements ServerInterface {
 	
 	private boolean isMalicious() {
 		Random r = new Random();
-		if(r.nextInt(100) > tauxMalicieux)
+		if(r.nextInt(100) < tauxMalicieux)
 			return true;
 		return false;
 	}
@@ -138,9 +138,11 @@ public class Calculateur implements ServerInterface {
 	
 	private int fib(int x) throws RemoteException {
 		if (isMalicious()) {
+		        System.out.println("Malicious operation");
 			Random rand = new Random();
 			return rand.nextInt((4999) + 1);
 		}
+		
 		if (x == 0)
 			return 0;
 		if (x == 1)
@@ -150,6 +152,7 @@ public class Calculateur implements ServerInterface {
 
 	private int prime(int x) throws RemoteException {
 		if (isMalicious()) {
+		        System.out.println("Malicious operation");
 			Random rand = new Random();
 			return rand.nextInt((4999) + 1);
 		}
