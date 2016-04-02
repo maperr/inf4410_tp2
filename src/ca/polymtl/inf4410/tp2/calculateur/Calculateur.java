@@ -79,8 +79,7 @@ public class Calculateur implements ServerInterface {
 				current = prime(op.value);
 			}
 			// current = current % 5000;
-			sum += current;
-			sum %= 5000;
+			sum = (sum + current % 5000) % 5000;
 		}
 
 		System.out.println("My task consisting of " + x.size() + " tasks is equal to " + sum);
@@ -110,7 +109,7 @@ public class Calculateur implements ServerInterface {
 	
 	private boolean isMalicious() {
 		Random r = new Random();
-		if(r.nextInt(100) < tauxMalicieux)
+		if(r.nextInt(100) + 1 < tauxMalicieux)
 			return true;
 		return false;
 	}
@@ -170,7 +169,7 @@ public class Calculateur implements ServerInterface {
 	}
 
 	private boolean isPrime(int x) throws RemoteException {	
-		boolean result;
+	    /*	boolean result;
 		
 		if (x <= 1)
 			result = false;
@@ -184,10 +183,23 @@ public class Calculateur implements ServerInterface {
 		result = true;
 		
 		if (isMalicious()) {
+		        System.out.println("Malicious isPrime");
 			result = !result;
 		}
 		
-		return result;
+		return result; */
+
+	    if (x <= 1)
+		return false;
+
+	    for (int i = 2; i < x; ++i)
+		{
+		    if (x % i == 0)
+			return false;
+		}
+
+	    return true;
+
 	}
     public String echo(String theString) throws RemoteException {
 	return "Returns :" + theString;
