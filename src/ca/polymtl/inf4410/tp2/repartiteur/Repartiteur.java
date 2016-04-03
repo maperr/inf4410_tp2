@@ -176,18 +176,6 @@ public class Repartiteur implements Observer
 			    		t.join(5000);
 			    		// calcThreads.get(0).join(10000);
 			    	}
-			    	
-			    	// debugging
-			    	new Thread( new Runnable() {
-			            public void run()  {
-			            	try {
-								Thread.sleep( 3000 );
-								PrintHashMapContents();
-							} catch (InterruptedException e) {
-								// e.printStackTrace();
-							} 
-			            }
-			         }).start();
 			    }
 			} 
 			catch (InterruptedException e) 
