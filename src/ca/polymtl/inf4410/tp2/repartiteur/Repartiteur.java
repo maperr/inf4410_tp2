@@ -221,7 +221,7 @@ public class Repartiteur
 	{
 		for(Task t : mTasks) 
 		{
-			if(t.mStatus != TaskStatus.DONE) 
+			if(t.mStatus == TaskStatus.REJECTED) 
 			{
 				for(CalculateurThread ct : mCalculateurThreads)
 				{
