@@ -138,15 +138,9 @@ public class Repartiteur
 			    PrintTasksList(list_operations);
 			}
 			
-			// initialize and fill the list of tasks
-			int it = 0;
-			mTasks = new ArrayList<>();
-			for(List<Operation> operations : list_operations) 
-			{
-				mTasks.add(new Task(operations, it++, TaskStatus.WAITING));
-			}
 			
-			// for each server, initialize and start its associated thread
+			
+			// for each server, initialize its associated thread
 			for(int i = 0; i < mCalculateurs.size(); i++) 
 			{
 			    if (SHOW_DEBUG_INFO)
@@ -156,9 +150,21 @@ public class Repartiteur
 			    
 			    CalculateurThread ct = new CalculateurThread(mCalculateurs.get(i), i, mResult);
 			    mCalculateurThreads.add(ct);
-			    ct.start(); // the thread will wait for a task
 			}
 			
+			
+			// initialize, fill and launch the tasks
+			int it = 0;
+			mTasks = new ArrayList<>();
+			for(List<Operation> operations : list_operations) 
+			{
+				Task t = new Task(operations, it, TaskStatus.WAITING);
+				mTasks.add(t);
+				mCalculateurThreads.get(it).launchTask(t);
+				mCalculateurThreads.get(it).start(); 
+				it++;
+			}
+
 			try 
 			{
 			    while (!AllTasksFinished()) 
