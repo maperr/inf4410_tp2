@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Observable;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import ca.polymtl.inf4410.tp2.repartiteur.Task.TaskStatus;
 import ca.polymtl.inf4410.tp2.shared.*;
 
 class CalculateurThread extends Thread
@@ -36,6 +37,13 @@ class CalculateurThread extends Thread
 			displayDebugInfo("Associated with task " + t.mId);
 	    }
 		mTask = t;
+    }
+    
+    public void outOfOrderRepair()
+    {
+    	if(mTask != null && !this.isAlive() && mTask.mStatus == TaskStatus.RUNNING) {
+    		mTask.mStatus = TaskStatus.REJECTED;
+    	}
     }
     
 	@Override
@@ -86,6 +94,7 @@ class CalculateurThread extends Thread
 		}
 		else if (mTask.mStatus == Task.TaskStatus.REJECTED)  // the calculateur refused the task, do not add the result to the sum
 		{
+			mTask.mUnfitThreads.add(this);
 			if (SHOW_DEBUG_INFO)
 			{
 				displayDebugInfo("Task was rejected, adding " + mIdentifier + " to list of calculateurs that failed the task");

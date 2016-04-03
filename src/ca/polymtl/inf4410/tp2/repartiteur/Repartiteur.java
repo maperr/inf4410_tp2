@@ -167,11 +167,13 @@ public class Repartiteur
 
 			try 
 			{
-			    while (!AllTasksFinished()) 
+			    while (!allTasksFinished()) 
 			    {
-			    	LaunchTasksOnThreads();
+			    	launchTasksOnThreads();
+
+			    	serverBreakDownCheck();
 			    	
-			    	if(ImpossibleTask()) 
+			    	if(impossibleTask()) 
 			    		return;
 			    	
 			    	synchronized(mResult)
@@ -194,7 +196,7 @@ public class Repartiteur
 		
 	}
 	
-	private Boolean AllTasksFinished()
+	private Boolean allTasksFinished()
 	{
 		for(Task t : mTasks)
 		{
@@ -204,7 +206,7 @@ public class Repartiteur
 		return true;
 	}
 	
-	private Boolean ImpossibleTask()
+	private Boolean impossibleTask()
 	{
 		for(Task t : mTasks)
 		{
@@ -217,7 +219,7 @@ public class Repartiteur
 		return false;
 	}
 	
-	private void LaunchTasksOnThreads()
+	private void launchTasksOnThreads()
 	{
 		for(Task t : mTasks) 
 		{
@@ -232,6 +234,14 @@ public class Repartiteur
 					}
 				}
 			}
+		}
+	}
+	
+	private void serverBreakDownCheck() 
+	{
+		for(CalculateurThread ct : mCalculateurThreads)
+		{
+			ct.outOfOrderRepair();
 		}
 	}
 	
