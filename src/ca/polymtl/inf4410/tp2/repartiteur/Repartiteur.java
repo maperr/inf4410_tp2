@@ -179,7 +179,7 @@ public class Repartiteur implements Observer
 			    	// Wait 10 seconds
 			    	for (Thread t : mCalculateurThreads)
 			    	{
-			    		t.join(5000);
+			    		t.join();
 			    		// calcThreads.get(0).join(10000);
 			    	}
 			    }
