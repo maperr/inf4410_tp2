@@ -221,12 +221,15 @@ public class Repartiteur
 	{
 		for(Task t : mTasks) 
 		{
-			for(CalculateurThread ct : mCalculateurThreads)
+			if(t.mStatus != TaskStatus.DONE) 
 			{
-				if(!ct.isAlive() && !t.mUnfitThreads.contains(ct))
+				for(CalculateurThread ct : mCalculateurThreads)
 				{
-					ct.launchTask(t);
-					ct.run();
+					if(!ct.isAlive() && !t.mUnfitThreads.contains(ct))
+					{
+						ct.launchTask(t);
+						ct.run();
+					}
 				}
 			}
 		}
