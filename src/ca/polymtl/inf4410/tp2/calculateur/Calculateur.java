@@ -100,7 +100,7 @@ public class Calculateur implements ServerInterface
 
 		try 
 		{
-			ServerInterface stub = (ServerInterface) UnicastRemoteObject.exportObject(this, 0);
+			ServerInterface stub = (ServerInterface) UnicastRemoteObject.exportObject(this, this.port);
 
 			Registry registry = LocateRegistry.getRegistry(this.port);
 			registry.rebind("server", stub);
