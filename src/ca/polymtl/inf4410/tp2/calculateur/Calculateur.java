@@ -41,15 +41,13 @@ public class Calculateur implements CalculateurServer
 			throw new IllegalArgumentException("Invalid number of argument");
 		
 		Calculateur server;
-		int port;
-		int nbOpMax;
-		int txMalicieux;
+		
 		// parse arguments
 		try 
 		{  
-	         txMalicieux = Integer.parseInt(args[0]);  
-	         nbOpMax = Integer.parseInt(args[1]);  
-	         port = Integer.parseInt(args[2]);
+	         int txMalicieux = Integer.parseInt(args[0]);  
+	         int nbOpMax = Integer.parseInt(args[1]);  
+	         int port = Integer.parseInt(args[2]);
 	         server = new Calculateur(txMalicieux, nbOpMax, port);
 	    } 
 		catch (NumberFormatException e) 
@@ -59,8 +57,7 @@ public class Calculateur implements CalculateurServer
 		
 		// use the default, restrictive security manager
 		System.setSecurityManager(new SecurityManager());
-		Registry registry = LocateRegistry.getRegistry(port);
-		registry.rebind("CalculateurServer", server);
+		Naming.rebind("CalculateurServer", server);
 		System.out.println("Server ready to receive tasks.");
 		return;
 	}
