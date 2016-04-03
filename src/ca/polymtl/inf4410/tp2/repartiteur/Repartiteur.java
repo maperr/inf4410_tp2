@@ -223,8 +223,9 @@ public class Repartiteur
 		{
 			for(CalculateurThread ct : mCalculateurThreads)
 			{
-				if(!ct.isBusy() && !t.mUnfitThreads.contains(ct))
+				if(!ct.isAlive() && !t.mUnfitThreads.contains(ct))
 				{
+					ct.start();
 					ct.launchTask(t);
 				}
 			}
