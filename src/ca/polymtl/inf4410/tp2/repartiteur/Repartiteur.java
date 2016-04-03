@@ -135,8 +135,11 @@ public class Repartiteur implements Observer
 		if(mIsModeSecurise) 
 		{
 			// split the operations in different tasks (group of operations) to be executed on threads
-			double dOperationByTask = mOperations.size() / mCalculateurs.size();
+			float dOperationByTask = mOperations.size() / mCalculateurs.size();
+			System.out.println("#dOperationByTask = " + dOperationByTask);
 			int nOperationByTask = (int) Math.ceil(dOperationByTask);
+			System.out.println("#operations = " + mOperations.size() + ", #calculateurs = " + mCalculateurs.size() );
+			System.out.println("#opbytask = " + nOperationByTask);
 			List<List<Operation>> list_operations = chunk(mOperations, nOperationByTask);
 			
 			if (SHOW_DEBUG_INFO)
