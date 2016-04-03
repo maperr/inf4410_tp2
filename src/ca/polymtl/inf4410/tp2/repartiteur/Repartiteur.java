@@ -94,49 +94,35 @@ public class Repartiteur implements Observer
 		mIsModeSecurise = Boolean.valueOf(modeSecurise);
 	}
 	
-	public void run() // throws RemoteException 
+	public void run()
 	{
 		// thread pour chaque serveur
 		// check 50% + 1 si tous d'accord (majorite) -> continue sinon envoie a un autre
 		// creer fichier configuration au lieu hardcode
 		
-		// instancier les servers
 		if(System.getSecurityManager() == null) 
 		{
 			System.setSecurityManager(new SecurityManager());	
 		}
 		
+		// create the server stubs and add them to the list of available servers
 		for(ServerDetails si : mServersDetails)
 		{
 		    try
 		    {
 		    	mCalculateurs.add(loadServerStub(si.ip_address, si.port));
 		    } 
-		    catch (NotBoundException e) 
+		    catch (NotBoundException e) // server not reachable
 		    {
-		    	// We don't even add the stub to the thing
-		    	System.out.println("Server stub at" + si.ip_address + ":" + si.port + " is unreachable, not adding to the servers to reach");
+		    	System.out.println("Server stub at " + si.ip_address + ":" + si.port + " is unreachable, not adding it to the server list.");
 		    }
 		}
 
 		if (SHOW_DEBUG_INFO) 
 		{
-		    System.out.println("We have " + mCalculateurs.size() + " servers");
+		    System.out.println("We have " + mCalculateurs.size() + " servers.");
 		}
 		
-		try 
-		{
-		    String res = mCalculateurs.get(0).echo("YOYOYO");
-		    System.out.println(res);
-		} 
-		catch (RemoteException e) 
-		{
-		    System.out.println(e.getMessage());
-		} 
-		catch (NullPointerException ne) 
-		{
-		    System.out.println(ne.getMessage());
-		}
 		mResult.set(0);
 		
 		if(mIsModeSecurise) 
@@ -144,22 +130,21 @@ public class Repartiteur implements Observer
 			// split the operations in different tasks (group of operations) to be executed on threads
 			List<List<Operation>> list_operations = splitList(mOperations, mCalculateurs.size());
 			
-			// Print the task list 
 			if (SHOW_DEBUG_INFO)
 			{
 			    PrintTasksList(list_operations);
 			}
 			
-			// Initialize and fill the atomic hashmap <task, threadId> where threadId is the index of the threads 
-			// that tried running said task.
+			// initialize and fill the atomic hashmap <task, threadId> where threadId is the index of the threads 
+			// that tried and failed to run said task
 			mUnexecutedTasksToThreads = Collections.synchronizedMap(new HashMap<List<Operation>, List<Integer>>());
 			for(List<Operation> tache : list_operations) 
 			{
 				mUnexecutedTasksToThreads.put(tache, new ArrayList<Integer>());
 			}
 			
-			// When a thread executes a task, remove it from the hashmap. If it successfully finished said task,
-			// it doesn't add it back to it.
+			// when a thread executes a task, remove it from the hashmap. If it successfully finished said task,
+			// it doesn't add it back.
 			for(int i = 0; i < mCalculateurs.size(); i++) 
 			{
 			    if (SHOW_DEBUG_INFO)
@@ -167,8 +152,8 @@ public class Repartiteur implements Observer
 			    	System.out.println("Creating thread " + i);
 			    }
 			    
+			    // instantiate the thread associated with each calculateur server and add it to the list
 			    Thread d = new Thread(new CalculateurThread(mCalculateurs.get(i), mUnexecutedTasksToThreads, list_operations.get(i), i, mResult));
-			    //calcThreads.add(new CalculateurThread(calculateurs.get(i), unexecutedTasksToThreads, list_operations.get(i), i, result));
 			    mCalculateurThreads.add(d);
 			}
 			
@@ -206,6 +191,7 @@ public class Repartiteur implements Observer
 		
 	}
 	
+	// prints the operations associated with a task, used for debugging
     private void PrintTasksList(List<List<Operation>> listOfOps) 
     {
 		for (int i = 0; i < listOfOps.size() ; i++) 
@@ -213,7 +199,7 @@ public class Repartiteur implements Observer
 		    System.out.println("Task " + i + ":");
 		    for (int j = 0; j < listOfOps.get(i).size() ; j++) 
 		    {
-		    	System.out.println("\t " + (listOfOps.get(i).get(j).type == 0 ? " Fib " : "Prime ") + listOfOps.get(i).get(j).value);
+		    	System.out.println("\t " + (listOfOps.get(i).get(j).type == 0 ? "Fib " : "Prime ") + listOfOps.get(i).get(j).value);
 		    }
 		}
     }

@@ -12,89 +12,115 @@ import ca.polymtl.inf4410.tp2.shared.*;
 
 class CalculateurThread extends Observable implements Runnable
 {
-	private TaskStatus status;
+    private static final Boolean SHOW_DEBUG_INFO = true;
+    
+	private TaskStatus mStatus;
+	private ServerInterface mServer; // reference to the remote server on which the task will be done
+	private List<Operation> mOperations; // task to be executed
+	private int mIdentifier;  // identifier provided by the repartiteur
+	private Map mParentUnexecutedTasks;
+	private AtomicInteger mResultRef;
 	
-        private ServerInterface server; // The reference to the remote server on which the task will be done
-	private List<Operation> operations; // The said task
-	private int identifiant;  // Identifier provided by the main thread
-	private Map parentUnexecutedTasks;
-	private AtomicInteger resultRef;
-        private static final Boolean SHOW_DEBUG_INFO = true;
-        private String myHeader;
-	
-        public CalculateurThread(ServerInterface serv,
-			Map unexecutedTasksToThreads, List<Operation> ops, int i,
-			AtomicInteger result) {
-		operations = ops;
-		server = serv;
-		identifiant = i;
-		parentUnexecutedTasks = unexecutedTasksToThreads;
-		resultRef = result;
-		myHeader = "Thread["+identifiant+"] :";
+    public CalculateurThread(ServerInterface serv,
+			Map unexecutedTasksToThreads, 
+			List<Operation> ops, 
+			int id,
+			AtomicInteger result) 
+    {
+    	mOperations = ops;
+		mServer = serv;
+		mIdentifier = id;
+		mParentUnexecutedTasks = unexecutedTasksToThreads;
+		mResultRef = result;
 	}
 
-	public int getIdentifiant()
+	public int getIdentifier()
 	{
-		return identifiant;
+		return mIdentifier;
 	}
 	
 	@Override
 	public void run()
 	{
-
-	        if (SHOW_DEBUG_INFO) {
-		    System.out.println(myHeader + "I have been created with task of size " + operations.size());
-		}
-		status = TaskStatus.SUBMITTED;
+		if (SHOW_DEBUG_INFO) 
+		{
+			displayDebugInfo("I have been created with task of size " + mOperations.size());
+	    }
+		
+		mStatus = TaskStatus.SUBMITTED;
 		int res = -1;		
-	
 		
-	    try {
-	    	status = TaskStatus.WORKING;
-	    	res = server.executeTask(operations);
-		if (SHOW_DEBUG_INFO)
-		    System.out.println(myHeader + " result from RMI call is " + res);
-		status = TaskStatus.DONE;
-	    } catch (RemoteException e) {
-	    	// Do something clever like throwing a message to main thread
-	    	System.out.println(e.getMessage());
-	    	status = TaskStatus.REJECTED_LOAD;
-	    } catch (NullPointerException npe) {
-		if (server == null)
-		    System.out.println("The server stub you tried to reach is not defined");
-		else
-		    System.out.println(npe.getMessage());
-	    }
-	    
-	    if (status == TaskStatus.REJECTED_LOAD) {
-		if (SHOW_DEBUG_INFO)
-		    System.out.println(myHeader + " Task was rejected");
-	    	// // Put back the task into the map
-	    	// currentMapStatus.add(identifiant);
-	    	// synchronized (parentUnexecutedTasks) {
-	    	// 	parentUnexecutedTasks.put(operations, currentMapStatus);
+		try 
+		{
+			mStatus = TaskStatus.WORKING;
+			res = mServer.executeTask(mOperations);
+			
+			if (SHOW_DEBUG_INFO)
+			{
+				displayDebugInfo("Result from RMI call is " + res);
+			}
+			
+			mStatus = TaskStatus.DONE;
+		} 
+		catch (RemoteException e) 
+		{
+			// do something clever like throwing a message to main thread
+			displayDebugInfo(e.getMessage());
+			mStatus = TaskStatus.REJECTED_LOAD;
+		} 
+		catch (NullPointerException npe) 
+		{
+			if (mServer == null)
+			{
+				displayDebugInfo("The server stub you tried to reach is not defined");
+			}
+			else
+			{
+				displayDebugInfo(npe.getMessage());
+			}
+		}
+		
+		if (mStatus == TaskStatus.REJECTED_LOAD) 
+		{
+			if (SHOW_DEBUG_INFO)
+			{
+				displayDebugInfo("Task was rejected");
+			}
+			// // Put back the task into the map
+			// currentMapStatus.add(identifiant);
+			// synchronized (parentUnexecutedTasks) {
+			// 	parentUnexecutedTasks.put(operations, currentMapStatus);
 		// 	}
-	    	
-	    } else if (status == TaskStatus.DONE) {
-		// TODO: Should check the concurrency on the list
-		// Save the list
-		List<Integer> currentMapStatus = (List<Integer>) parentUnexecutedTasks.get(operations);
-		// Remove task from map
-		synchronized(parentUnexecutedTasks){
-			parentUnexecutedTasks.remove(operations);
+			
+		} 
+		else if (mStatus == TaskStatus.DONE) 
+		{
+			// TODO: Should check the concurrency on the list
+			// Save the list
+			List<Integer> currentMapStatus = (List<Integer>) mParentUnexecutedTasks.get(mOperations);
+			// Remove task from map
+			synchronized(mParentUnexecutedTasks)
+			{
+				mParentUnexecutedTasks.remove(mOperations);
+			}
 		}
 		
 		if (SHOW_DEBUG_INFO)
-		    System.out.println(myHeader + " Adding " + res + "to current res(" + resultRef.get() + ") and applying % 5000");
-	    	// Shouldn't do something || Notify the result ?
-		resultRef.getAndAdd(res % 5000);
-		resultRef.set(resultRef.get() % 5000);
-	    }
-	    
-	    // TODO Tell main thread of the result
-	    //setChanged();
-	    //notifyObservers(res);
+		{
+			displayDebugInfo("Adding " + res + "to current res(" + mResultRef.get() + ") and applying % 5000");
+		}
+			
+		// Shouldn't do something || Notify the result ?
+		mResultRef.getAndAdd(res % 5000);
+		mResultRef.set(mResultRef.get() % 5000);
+		// TODO Tell main thread of the result
+		//setChanged();
+		//notifyObservers(res);
 	}
 	
-	
+	// used to identify thread while printing debug info
+	private void displayDebugInfo(String message) 
+	{
+		System.out.println("Message from thread " + mIdentifier + ": " + message);
+	}
 }

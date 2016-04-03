@@ -201,7 +201,4 @@ public class Calculateur implements ServerInterface {
 	    return true;
 
 	}
-    public String echo(String theString) throws RemoteException {
-	return "Returns :" + theString;
-    }
 }
