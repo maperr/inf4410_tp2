@@ -19,13 +19,13 @@ import ca.polymtl.inf4410.tp2.repartiteur.Repartiteur;
 import ca.polymtl.inf4410.tp2.repartiteur.ServerDetails;
 import ca.polymtl.inf4410.tp2.shared.*;
 
-public class CalculateurServerImpl implements CalculateurServer 
+public class Calculateur implements CalculateurServer 
 {
 	private int tauxMalicieux;
 	private int nbOperationsMax;
 	private int port;
 	
-	public CalculateurServerImpl(int txMalicieux, int nbOpMax, int p) 
+	public Calculateur(int txMalicieux, int nbOpMax, int p) 
 	{
 		tauxMalicieux = txMalicieux;
 		nbOperationsMax = nbOpMax;
@@ -40,7 +40,7 @@ public class CalculateurServerImpl implements CalculateurServer
 		if (args.length != 3)
 			throw new IllegalArgumentException("Invalid number of argument");
 		
-		CalculateurServerImpl server;
+		Calculateur server;
 		
 		// parse arguments
 		try 
@@ -48,7 +48,7 @@ public class CalculateurServerImpl implements CalculateurServer
 	         int txMalicieux = Integer.parseInt(args[0]);  
 	         int nbOpMax = Integer.parseInt(args[1]);  
 	         int port = Integer.parseInt(args[2]);
-	         server = new CalculateurServerImpl(txMalicieux, nbOpMax, port);
+	         server = new Calculateur(txMalicieux, nbOpMax, port);
 	    } 
 		catch (NumberFormatException e) 
 		{  
