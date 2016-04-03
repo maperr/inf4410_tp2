@@ -95,7 +95,7 @@ class CalculateurThread extends Observable implements Runnable
 			
 			if (SHOW_DEBUG_INFO)
 			{
-				displayDebugInfo("Adding " + res + " to current res(" + mResultRef.get() + ") and applying % 5000");
+				displayDebugInfo("Adding " + res + " to current res and applying % 5000, new result = " + mResultRef.get());
 			}			
 		}
 		else if (mStatus == TaskStatus.REJECTED_LOAD)  // the calculateur refused the task, do not add the result to the sum

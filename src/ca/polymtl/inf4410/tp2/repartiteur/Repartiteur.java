@@ -118,7 +118,13 @@ public class Repartiteur implements Observer
 		    	System.out.println("Server stub at " + si.ip_address + ":" + si.port + " is unreachable, not adding it to the server list.");
 		    }
 		}
-
+		
+		if (mCalculateurs.isEmpty())
+		{
+			System.out.println("Unable to execute request, there are no servers available.");
+			return;
+		}
+		
 		if (SHOW_DEBUG_INFO) 
 		{
 		    System.out.println("We have " + mCalculateurs.size() + " servers.");
@@ -129,7 +135,7 @@ public class Repartiteur implements Observer
 		if(mIsModeSecurise) 
 		{
 			// split the operations in different tasks (group of operations) to be executed on threads
-			List<List<Operation>> list_operations = splitList(mOperations, mCalculateurs.size());
+			List<List<Operation>> list_operations = splitList(mOperations, mCalculateurs.size() - 1);
 			
 			if (SHOW_DEBUG_INFO)
 			{
