@@ -135,11 +135,7 @@ public class Repartiteur implements Observer
 		if(mIsModeSecurise) 
 		{
 			// split the operations in different tasks (group of operations) to be executed on threads
-			double dOperationByTask = (double) mOperations.size() / (double) mCalculateurs.size();
-			System.out.println("#dOperationByTask = " + dOperationByTask);
-			int nOperationByTask = (int) Math.ceil(dOperationByTask);
-			System.out.println("#operations = " + mOperations.size() + ", #calculateurs = " + mCalculateurs.size() );
-			System.out.println("#opbytask = " + nOperationByTask);
+			int nOperationByTask = (int) Math.ceil((double) mOperations.size() / (double) mCalculateurs.size());
 			List<List<Operation>> list_operations = chunk(mOperations, nOperationByTask);
 			
 			if (SHOW_DEBUG_INFO)
@@ -194,24 +190,13 @@ public class Repartiteur implements Observer
 			    System.out.println(e.getMessage());
 			}
 			// Wait for child to finish ?
-			System.out.println("Result is :" + mResult.get());
+			System.out.println("Final result is " + mResult.get());
 		}
 		else 
 		{
 			// are we supposed to do something here?
 		}
 		
-	}
-	
-	// prints the current contents of the hashmap for debugging info
-	private void PrintHashMapContents() 
-	{
-		Iterator it = mUnexecutedTasksToThreads.entrySet().iterator();
-	    while (it.hasNext()) {
-	        Map.Entry pair = (Map.Entry)it.next();
-	        System.out.println(pair.getKey() + " = " + pair.getValue());
-	        it.remove(); // avoids a ConcurrentModificationException
-	    }
 	}
 	
 	// prints the operations associated with a task, used for debugging
@@ -222,7 +207,7 @@ public class Repartiteur implements Observer
 		    System.out.println("Task " + i + ":");
 		    for (int j = 0; j < listOfOps.get(i).size() ; j++) 
 		    {
-		    	System.out.println("\t " + (listOfOps.get(i).get(j).type == 0 ? "Fib " : "Prime ") + listOfOps.get(i).get(j).value);
+		    	System.out.println("\t " + (listOfOps.get(i).get(j).type == OperationType.FIB ? "Fib " : "Prime ") + listOfOps.get(i).get(j).value);
 		    }
 		}
     }
@@ -288,16 +273,14 @@ public class Repartiteur implements Observer
 		    {
 		    	String[] splited = line.split(" ");
 		    	// OperationType type;
-			int type;
+			OperationType type;
 			if(splited[0].equals("fib")) 
 	    	{
-		    //type = OperationType.FIB;
-		        type = 0;
+				type = OperationType.FIB;
 	    	} 
 	    	else if (splited[0].equals("prime")) 
 	    	{
-		    // type = OperationType.PRIME;
-		        type = 1;
+	    		type = OperationType.PRIME;
 	    	} 
 	    	else
 	    	{

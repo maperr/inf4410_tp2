@@ -80,10 +80,7 @@ class CalculateurThread extends Observable implements Runnable
 		if (mStatus == TaskStatus.DONE) 
 		{
 			// remove task from map
-			synchronized(mParentUnexecutedTasks)
-			{
-				mParentUnexecutedTasks.remove(mOperations);
-			}
+			mParentUnexecutedTasks.remove(mOperations);
 				
 			mResultRef.getAndAdd(res % 5000);
 			mResultRef.set(mResultRef.get() % 5000);
@@ -96,11 +93,8 @@ class CalculateurThread extends Observable implements Runnable
 		else if (mStatus == TaskStatus.REJECTED_LOAD)  // the calculateur refused the task, do not add the result to the sum
 		{
 			// add calculateur to task in map
-			synchronized(mParentUnexecutedTasks)
-			{
-				List<Integer> calculateurs = (List<Integer>) mParentUnexecutedTasks.get(mOperations);
-				calculateurs.add(mIdentifier);
-			}
+			List<Integer> calculateurs = (List<Integer>) mParentUnexecutedTasks.get(mOperations);
+			calculateurs.add(mIdentifier);
 			
 			if (SHOW_DEBUG_INFO)
 			{
