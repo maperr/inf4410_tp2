@@ -17,12 +17,14 @@ import ca.polymtl.inf4410.tp2.repartiteur.Repartiteur;
 import ca.polymtl.inf4410.tp2.repartiteur.ServerDetails;
 import ca.polymtl.inf4410.tp2.shared.*;
 
-public class Calculateur implements ServerInterface {
+public class Calculateur implements ServerInterface 
+{
 	private int tauxMalicieux;
 	private int nbOperationsMax;
 	private int port;
 	
-	public Calculateur(int txMalicieux, int nbOpMax, int p) {
+	public Calculateur(int txMalicieux, int nbOpMax, int p) 
+	{
 		tauxMalicieux = txMalicieux;
 		nbOperationsMax = nbOpMax;
 		port = p;
@@ -39,15 +41,18 @@ public class Calculateur implements ServerInterface {
 		}
 		else if (args.length == 3)
 		{
-			try {  
+			try 
+			{  
 		         int txMalicieux = Integer.parseInt(args[0]);  
 		         int nbOpMax = Integer.parseInt(args[1]);  
 		         int port = Integer.parseInt(args[2]);
 		         Calculateur c = new Calculateur(txMalicieux, nbOpMax, port);
 		         c.run();
-		      } catch (NumberFormatException e) {  
+		    } 
+			catch (NumberFormatException e) 
+			{  
 		    	  throw new IllegalArgumentException("Invalid argument");
-		      }  
+		    }  
 		}
 		else
 		{
@@ -88,33 +93,44 @@ public class Calculateur implements ServerInterface {
 	
 	private void run() 
 	{
-		if (System.getSecurityManager() == null) {
+		if (System.getSecurityManager() == null) 
+		{
 			System.setSecurityManager(new SecurityManager());
 		}
 
-		try {
+		try 
+		{
 			ServerInterface stub = (ServerInterface) UnicastRemoteObject.exportObject(this, 0);
 
 			Registry registry = LocateRegistry.getRegistry(this.port);
 			registry.rebind("server", stub);
 			System.out.println("Server ready.");
-		} catch (ConnectException e) {
+		} 
+		catch (ConnectException e) 
+		{
 			System.err.println("Impossible de se connecter au registre RMI. Est-ce que rmiregistry est lancé ?");
 			System.err.println();
 			System.err.println("Erreur: " + e.getMessage());
-		} catch (Exception e) {
+		} 
+		catch (Exception e) 
+		{
 			System.err.println("Erreur: " + e.getMessage());
 		}
 	}
 	
-	private boolean isMalicious() {
+	private boolean isMalicious() 
+	{
 		Random r = new Random();
+		
 		if(r.nextInt(100) + 1 < tauxMalicieux)
+		{
 			return true;
+		}
 		return false;
 	}
 	
-	private boolean isRefused(int nbOps) {
+	private boolean isRefused(int nbOps)
+	{
 		if (nbOps > nbOperationsMax)
 		{
 			Random rand = new Random();
@@ -136,23 +152,32 @@ public class Calculateur implements ServerInterface {
 		}
 	}
 	
-	private int fib(int x) throws RemoteException {
-		if (isMalicious()) {
-		        System.out.println("Malicious operation");
+	private int fib(int x) throws RemoteException 
+	{
+		if (isMalicious()) 
+		{
+			System.out.println("Malicious operation");
 			Random rand = new Random();
 			return rand.nextInt((4999) + 1);
 		}
 		
 		if (x == 0)
+		{
 			return 0;
+		}
+		
 		if (x == 1)
+		{
 			return 1;
+		}
+		
 		return fib(x - 1) + fib(x - 2);
 	}
 
 	private int prime(int x) throws RemoteException {
-		if (isMalicious()) {
-		        System.out.println("Malicious operation");
+		if (isMalicious()) 
+		{
+		    System.out.println("Malicious operation");
 			Random rand = new Random();
 			return rand.nextInt((4999) + 1);
 		}
@@ -162,13 +187,16 @@ public class Calculateur implements ServerInterface {
 		for (int i = 1; i <= x; ++i)
 		{
 			if (isPrime(i) && x % i == 0 && i > highestPrime)
+			{
 				highestPrime = i;
+			}
 		}
 		
 		return highestPrime;
 	}
 
-	private boolean isPrime(int x) throws RemoteException {	
+	private boolean isPrime(int x) throws RemoteException 
+	{	
 	    /*	boolean result;
 		
 		if (x <= 1)
@@ -190,15 +218,18 @@ public class Calculateur implements ServerInterface {
 		return result; */
 
 	    if (x <= 1)
-		return false;
-
+	    {
+	    	return false;
+	    }
+	    
 	    for (int i = 2; i < x; ++i)
 		{
 		    if (x % i == 0)
-			return false;
+		    {
+		    	return false;
+		    }
 		}
 
 	    return true;
-
 	}
 }

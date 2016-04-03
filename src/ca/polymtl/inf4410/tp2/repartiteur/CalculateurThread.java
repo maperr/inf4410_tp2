@@ -44,7 +44,7 @@ class CalculateurThread extends Observable implements Runnable
 	{
 		if (SHOW_DEBUG_INFO) 
 		{
-			displayDebugInfo("I have been created with task of size " + mOperations.size());
+			displayDebugInfo("I have been created with task of size " + mOperations.size() + " operations");
 	    }
 		
 		mStatus = TaskStatus.SUBMITTED;
@@ -90,7 +90,7 @@ class CalculateurThread extends Observable implements Runnable
 			// currentMapStatus.add(identifiant);
 			// synchronized (parentUnexecutedTasks) {
 			// 	parentUnexecutedTasks.put(operations, currentMapStatus);
-		// 	}
+			// 	}
 			
 		} 
 		else if (mStatus == TaskStatus.DONE) 
@@ -121,6 +121,6 @@ class CalculateurThread extends Observable implements Runnable
 	// used to identify thread while printing debug info
 	private void displayDebugInfo(String message) 
 	{
-		System.out.println("Message from thread " + mIdentifier + ": " + message);
+		System.out.println("Message from calculateur " + mIdentifier + ": " + message);
 	}
 }
