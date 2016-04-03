@@ -135,7 +135,8 @@ public class Repartiteur implements Observer
 		if(mIsModeSecurise) 
 		{
 			// split the operations in different tasks (group of operations) to be executed on threads
-			List<List<Operation>> list_operations = splitList(mOperations, mCalculateurs.size());
+			int nOperationByTask = (int) Math.ceil(mOperations.size() / mCalculateurs.size());
+			List<List<Operation>> list_operations = chunk(mOperations, nOperationByTask);
 			
 			if (SHOW_DEBUG_INFO)
 			{
@@ -310,17 +311,31 @@ public class Repartiteur implements Observer
 		return ops;
 	}
 	
-	private List<List<Operation>> splitList(List<Operation> list, int nbCalculateurs) {
-		int nbLists = list.size() / nbCalculateurs;
-	    List<List<Operation>> parts = new ArrayList<List<Operation>>();
-	    
-	    for (int i = 0; i < list.size(); i += nbLists) 
-	    {
-	        parts.add(new ArrayList<Operation>(list.subList(i, Math.min(list.size(), i + nbLists))));
-	    }
-	    
-	    return parts;
-	}
+	// source: http://stackoverflow.com/a/29111959
+	private static <T> List<List<T>> chunk(List<T> input, int chunkSize) 
+	{
+
+        int inputSize = input.size();
+        int chunkCount = (int) Math.ceil(inputSize / (double) chunkSize);
+
+        Map<Integer, List<T>> map = new HashMap<>(chunkCount);
+        List<List<T>> chunks = new ArrayList<>(chunkCount);
+
+        for (int i = 0; i < inputSize; i++) 
+        {
+
+            map.computeIfAbsent(i / chunkSize, (ignore) -> 
+            {
+
+                List<T> chunk = new ArrayList<>();
+                chunks.add(chunk);
+                return chunk;
+
+            }).add(input.get(i));
+        }
+
+        return chunks;
+    }
 
 	@Override
 	public void update(Observable o, Object arg) 

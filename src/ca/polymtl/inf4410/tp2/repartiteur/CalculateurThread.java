@@ -55,11 +55,6 @@ class CalculateurThread extends Observable implements Runnable
 			mStatus = TaskStatus.WORKING;
 			res = mServer.executeTask(mOperations);
 			
-			if (SHOW_DEBUG_INFO)
-			{
-				displayDebugInfo("Result from RMI call is " + res);
-			}
-			
 			mStatus = TaskStatus.DONE;
 		} 
 		catch (RemoteException e) 
@@ -95,7 +90,7 @@ class CalculateurThread extends Observable implements Runnable
 			
 			if (SHOW_DEBUG_INFO)
 			{
-				displayDebugInfo("Adding " + res + " to current res and applying % 5000, new result = " + mResultRef.get());
+				displayDebugInfo("Adding " + res + " to result and applying % 5000, new current result is " + mResultRef.get());
 			}			
 		}
 		else if (mStatus == TaskStatus.REJECTED_LOAD)  // the calculateur refused the task, do not add the result to the sum
