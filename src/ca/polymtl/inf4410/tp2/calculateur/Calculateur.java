@@ -3,10 +3,8 @@ package ca.polymtl.inf4410.tp2.calculateur;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.rmi.ConnectException;
-import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -19,7 +17,7 @@ import ca.polymtl.inf4410.tp2.repartiteur.Repartiteur;
 import ca.polymtl.inf4410.tp2.repartiteur.ServerDetails;
 import ca.polymtl.inf4410.tp2.shared.*;
 
-public class Calculateur implements CalculateurServer 
+public class Calculateur implements ServerInterface 
 {
 	private int tauxMalicieux;
 	private int nbOperationsMax;
@@ -34,71 +32,90 @@ public class Calculateur implements CalculateurServer
 	}
 	
 	// utilisation:
-	//		./CalculateurServerImpl tauxMalicieux(0-100) nbOperationsMaximum portDuRegistry
-	public static void main(String[] args) throws RemoteException, MalformedURLException
+	//		./Calculateur txMalicieux nbOperationsMaximum portDuRegistry
+	public static void main(String[] args)
 	{
-		if (args.length != 3)
-			throw new IllegalArgumentException("Invalid number of argument");
-		
-		Calculateur server;
-		
-		// parse arguments
-		try 
-		{  
-	         int txMalicieux = Integer.parseInt(args[0]);  
-	         int nbOpMax = Integer.parseInt(args[1]);  
-	         int port = Integer.parseInt(args[2]);
-	         server = new Calculateur(txMalicieux, nbOpMax, port);
-	    } 
-		catch (NumberFormatException e) 
-		{  
-	    	  throw new IllegalArgumentException("Invalid argument format");
-	    }  
-		
-		// use the default, restrictive security manager
-		System.setSecurityManager(new SecurityManager());
-		Naming.rebind("CalculateurServer", server);
-		System.out.println("Server ready to receive tasks.");
-		return;
+		if (args.length < 3) 
+		{
+			System.out.println("Invalid number of arguments");
+		}
+		else if (args.length == 3)
+		{
+			try 
+			{  
+		         int txMalicieux = Integer.parseInt(args[0]);  
+		         int nbOpMax = Integer.parseInt(args[1]);  
+		         int port = Integer.parseInt(args[2]);
+		         Calculateur c = new Calculateur(txMalicieux, nbOpMax, port);
+		         c.run();
+		    } 
+			catch (NumberFormatException e) 
+			{  
+		    	  throw new IllegalArgumentException("Invalid argument");
+		    }  
+		}
+		else
+		{
+		 	throw new IllegalArgumentException("Too many arguments");
+		}
 	}
 	
-	@Override
-	public int compute(Task task) throws RemoteException 
+	public int executeTask(List<Operation> x) throws RemoteException 
 	{
-		if(isRefused(task.getOperations().size())) 
+		if(isRefused(x.size())) 
 		{
-			throw new RemoteException("Task's number of operations exceeds server capacity");
+			throw new RemoteException("Task refused!");
 		}
-		
-		if(isMalicious()) 
-		{
-			Random rand = new Random();
-			return rand.nextInt((4999) + 1);
-		}
-		
+
 		int sum = 0;
 		
-		for(Operation op : task.getOperations())
+		for(Operation op : x)
 		{
 			int current;
-			
-			if (op.getType() == Operation.OperationType.FIB) 
+			//if (op.type == OperationType.FIB)
+			if (op.type == 0) 
 			{
-			    System.out.println("Doing fib("+op.getValue()+")");
-				current = Operations.fib(op.getValue());
+			    System.out.println("Doing fib("+op.value+")");
+				current = fib(op.value); 
 			} 
 			else 
 			{
-				System.out.println("Doing prime("+op.getValue()+")");
-				current = Operations.prime(op.getValue());
+			    System.out.println("Doing prime("+op.value+")");
+				current = prime(op.value);
 			}
-			
+			// current = current % 5000;
 			sum = (sum + current % 5000) % 5000;
 		}
-		
-		System.out.println("My task consisting of " + task.getOperations().size() + " tasks returns " + sum);
-		
+
+		System.out.println("My task consisting of " + x.size() + " tasks is equal to " + sum);
 		return sum;
+	}
+	
+	private void run() 
+	{
+		if (System.getSecurityManager() == null) 
+		{
+			System.setSecurityManager(new SecurityManager());
+		}
+
+		try 
+		{
+			ServerInterface stub = (ServerInterface) UnicastRemoteObject.exportObject(this, 0);
+
+			Registry registry = LocateRegistry.getRegistry(this.port);
+			registry.rebind("server", stub);
+			System.out.println("Server ready.");
+		} 
+		catch (ConnectException e) 
+		{
+			System.err.println("Impossible de se connecter au registre RMI. Est-ce que rmiregistry est lancé ?");
+			System.err.println();
+			System.err.println("Erreur: " + e.getMessage());
+		} 
+		catch (Exception e) 
+		{
+			System.err.println("Erreur: " + e.getMessage());
+		}
 	}
 	
 	private boolean isMalicious() 
@@ -133,5 +150,86 @@ public class Calculateur implements CalculateurServer
 		{
 			return false;
 		}
+	}
+	
+	private int fib(int x) throws RemoteException 
+	{
+		if (isMalicious()) 
+		{
+			System.out.println("Malicious operation");
+			Random rand = new Random();
+			return rand.nextInt((4999) + 1);
+		}
+		
+		if (x == 0)
+		{
+			return 0;
+		}
+		
+		if (x == 1)
+		{
+			return 1;
+		}
+		
+		return fib(x - 1) + fib(x - 2);
+	}
+
+	private int prime(int x) throws RemoteException {
+		if (isMalicious()) 
+		{
+		    System.out.println("Malicious operation");
+			Random rand = new Random();
+			return rand.nextInt((4999) + 1);
+		}
+		
+		int highestPrime = 0;
+		
+		for (int i = 1; i <= x; ++i)
+		{
+			if (isPrime(i) && x % i == 0 && i > highestPrime)
+			{
+				highestPrime = i;
+			}
+		}
+		
+		return highestPrime;
+	}
+
+	private boolean isPrime(int x) throws RemoteException 
+	{	
+	    /*	boolean result;
+		
+		if (x <= 1)
+			result = false;
+
+		for (int i = 2; i < x; ++i)
+		{
+			if (x % i == 0)
+				result = false;
+		}
+		
+		result = true;
+		
+		if (isMalicious()) {
+		        System.out.println("Malicious isPrime");
+			result = !result;
+		}
+		
+		return result; */
+
+	    if (x <= 1)
+	    {
+	    	return false;
+	    }
+	    
+	    for (int i = 2; i < x; ++i)
+		{
+		    if (x % i == 0)
+		    {
+		    	return false;
+		    }
+		}
+
+	    return true;
 	}
 }
