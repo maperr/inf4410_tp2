@@ -38,7 +38,8 @@ public class Repartiteur implements Observer
     private List<Thread> mCalculateurThreads;
 	protected Map mUnexecutedTasksToThreads;
 
-	private AtomicInteger mResult; // used asynchronously, use mutexes.
+	//private AtomicInteger mResult; // used asynchronously, use mutexes.
+	private int mResult;
 	
 	/*
 	 * utilisation:
@@ -84,8 +85,9 @@ public class Repartiteur implements Observer
 	{
         mCalculateurs = new ArrayList<>();
         mCalculateurThreads = new ArrayList<>();
-		mResult = new AtomicInteger();
-		
+		//mResult = new AtomicInteger();
+        mResult = 0;
+        
 		File opFile = Repartiteur.getFilePath(operationsFile).toFile();
 		mOperations = getOperationsFromFile(opFile);
 		
@@ -130,7 +132,7 @@ public class Repartiteur implements Observer
 		    System.out.println("We have " + mCalculateurs.size() + " servers.");
 		}
 		
-		mResult.set(0);
+		//mResult.set(0);
 		
 		if(mIsModeSecurise) 
 		{
@@ -189,7 +191,8 @@ public class Repartiteur implements Observer
 			    System.out.println(e.getMessage());
 			}
 			// Wait for child to finish ?
-			System.out.println("Final result is " + mResult.get());
+			//System.out.println("Final result is " + mResult.get());
+			System.out.println("Final result is " + mResult);
 		}
 		else 
 		{
