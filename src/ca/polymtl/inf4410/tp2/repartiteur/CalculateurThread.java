@@ -14,24 +14,20 @@ class CalculateurThread extends Observable implements Runnable
 {
     private static final Boolean SHOW_DEBUG_INFO = true;
     
-	private TaskStatus mStatus;
-	private ServerInterface mServer; // reference to the remote server on which the task will be done
-	private List<Operation> mOperations; // task to be executed
-	private int mIdentifier;  // identifier provided by the repartiteur
+	private Task mTask;
+	private CalculateurServer mServer; // reference to the remote server on which the task will be done
 	private Map mParentUnexecutedTasks;
 	private AtomicInteger mResultRef;
 	
-    public CalculateurThread(ServerInterface serv,
+    public CalculateurThread(CalculateurServer serv,
 			Map unexecutedTasksToThreads, 
-			List<Operation> ops, 
-			int id,
+			Task task, 
 			AtomicInteger result) 
     {
-    	mOperations = ops;
 		mServer = serv;
-		mIdentifier = id;
 		mParentUnexecutedTasks = unexecutedTasksToThreads;
 		mResultRef = result;
+		mTask = task;
 	}
 
 	public int getIdentifier()

@@ -1,6 +1,8 @@
 package ca.polymtl.inf4410.tp2.repartiteur;
 
 import ca.polymtl.inf4410.tp2.shared.*;
+import ca.polymtl.inf4410.tp2.shared.Operation.OperationType;
+import ca.polymtl.inf4410.tp2.shared.Task.TaskStatus;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -28,15 +30,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class Repartiteur implements Observer 
 {
-
 	private static final Boolean SHOW_DEBUG_INFO = true;
 	
 	private List<Operation> mOperations;
-	private ArrayList<ServerDetails> mServersDetails; 
-	private ArrayList<ServerInterface> mCalculateurs;
+	private List<ServerDetails> mServersDetails;
+	private ArrayList<CalculateurServer> mCalculateurs;
 	private Boolean mIsModeSecurise;
     private List<Thread> mCalculateurThreads;
-	protected Map mUnexecutedTasksToThreads;
+	private Map mUnexecutedTasksToThreads;
 
 	private AtomicInteger mResult; // used asynchronously, use mutexes.
 	
@@ -132,23 +133,31 @@ public class Repartiteur implements Observer
 		
 		mResult.set(0);
 		
-		if(mIsModeSecurise) 
+		if(!mIsModeSecurise) 
 		{
 			// split the operations in different tasks (group of operations) to be executed on threads
 			int nOperationByTask = (int) Math.ceil((double) mOperations.size() / (double) mCalculateurs.size());
 			List<List<Operation>> list_operations = chunk(mOperations, nOperationByTask);
 			
-			if (SHOW_DEBUG_INFO)
+			
+			// create task objects from the list of operations
+			int it = 0;
+			List<Task> tasks = new ArrayList<>();
+			for(List<Operation> operations : list_operations) 
 			{
-			    PrintTasksList(list_operations);
+				tasks.add(new Task(operations, it++, TaskStatus.SUBMITTED));
+				if (SHOW_DEBUG_INFO)
+				{
+					tasks.get(tasks.size()-1).printTask();
+				}
 			}
 			
-			// initialize and fill the atomic hashmap <task, threadId> where threadId is the index of the threads 
+			// initialize and fill the hashmap <task, threadId> where threadId is the index of the threads 
 			// that tried and failed to run said task
-			mUnexecutedTasksToThreads = new HashMap<List<Operation>, List<Integer>>();
-			for(List<Operation> tache : list_operations) 
+			mUnexecutedTasksToThreads = new HashMap<Task, List<Integer>>();
+			for(Task task : tasks) 
 			{
-				mUnexecutedTasksToThreads.put(tache, new ArrayList<Integer>());
+				mUnexecutedTasksToThreads.put(task, new ArrayList<Integer>());
 			}
 			
 			// when a thread executes a task, remove it from the hashmap. If it successfully finished said task,
@@ -161,7 +170,7 @@ public class Repartiteur implements Observer
 			    }
 			    
 			    // instantiate the thread associated with each calculateur server and add it to the list
-			    Thread d = new Thread(new CalculateurThread(mCalculateurs.get(i), mUnexecutedTasksToThreads, list_operations.get(i), i, mResult));
+			    Thread d = new Thread(new CalculateurThread(mCalculateurs.get(i), mUnexecutedTasksToThreads, tasks.get(i), mResult));
 			    mCalculateurThreads.add(d);
 			}
 			
@@ -197,27 +206,15 @@ public class Repartiteur implements Observer
 		}
 		
 	}
-	
-	// prints the operations associated with a task, used for debugging
-    private void PrintTasksList(List<List<Operation>> listOfOps) 
-    {
-		for (int i = 0; i < listOfOps.size() ; i++) 
-		{
-		    System.out.println("Task " + i + ":");
-		    for (int j = 0; j < listOfOps.get(i).size() ; j++) 
-		    {
-		    	System.out.println("\t " + (listOfOps.get(i).get(j).type == 0 ? "Fib " : "Prime ") + listOfOps.get(i).get(j).value);
-		    }
-		}
-    }
 
-	private ServerInterface loadServerStub(String hostname, int port) throws NotBoundException {
-		ServerInterface stub = null;
+	private CalculateurServer loadServerStub(String hostname, int port) throws NotBoundException 
+	{
+		CalculateurServer stub = null;
 
 		try 
 		{
 			Registry registry = LocateRegistry.getRegistry(hostname, port);
-			stub = (ServerInterface) registry.lookup("server");
+			stub = (CalculateurServer) registry.lookup("CalculateurServer");
 		} 
 		catch (NotBoundException e) 
 		{
@@ -271,26 +268,24 @@ public class Repartiteur implements Observer
 		    while ((line = br.readLine()) != null) 
 		    {
 		    	String[] splited = line.split(" ");
-		    	// OperationType type;
-			int type;
-			if(splited[0].equals("fib")) 
-	    	{
-				//type = OperationType.FIB;
-		        type = 0;
-	    	} 
-	    	else if (splited[0].equals("prime")) 
-	    	{
-	    		// type = OperationType.PRIME;
-		        type = 1;
-	    	} 
-	    	else
-	    	{
-	    		throw new IllegalArgumentException("File not correctly formatted");
-	    	}
-	    	
-		    	ops.add(new Operation(type,Integer.parseInt(splited[1])));
-		    }
-		}
+		    	OperationType type;
+		    	
+				if(splited[0].equals("fib")) 
+		    	{
+					type = OperationType.FIB;
+		    	} 
+		    	else if (splited[0].equals("prime")) 
+		    	{
+		    		type = OperationType.PRIME;
+		    	} 
+		    	else
+		    	{
+		    		throw new IllegalArgumentException("File not correctly formatted");
+		    	}
+		    	
+			    ops.add(new Operation(Integer.parseInt(splited[1]), type));
+			 }
+		}	
 		catch (IOException e) 
 		{
 			throw new IllegalArgumentException("Unable to read file properly");

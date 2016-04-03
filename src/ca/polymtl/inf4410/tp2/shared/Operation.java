@@ -1,16 +1,28 @@
 package ca.polymtl.inf4410.tp2.shared;
 
-
-public class Operation implements java.io.Serializable
+public class Operation
 {
-    //public OperationType type;
-    public int type;
-    public int value;
-
-	public Operation(int t, int x)
+	static public enum OperationType
 	{
-		type = t;
-		value = x;
+		PRIME, FIB
 	}
-
+	
+	private int mValue;
+	private OperationType mType;
+	
+	public Operation(int value, OperationType type)
+	{
+		mValue = value;
+		mType = type;
+	}
+	
+	public int getValue() 
+	{
+		return mValue;
+	}
+	
+	public OperationType getType()
+	{
+		return mType;
+	}
 }
