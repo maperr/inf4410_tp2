@@ -225,8 +225,8 @@ public class Repartiteur
 			{
 				if(!ct.isAlive() && !t.mUnfitThreads.contains(ct))
 				{
-					ct.start();
 					ct.launchTask(t);
+					ct.run();
 				}
 			}
 		}
