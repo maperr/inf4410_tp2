@@ -1,5 +1,6 @@
 package ca.polymtl.inf4410.tp2.repartiteur;
 
+import ca.polymtl.inf4410.tp2.repartiteur.Task.TaskStatus;
 import ca.polymtl.inf4410.tp2.shared.*;
 
 import java.io.BufferedReader;
@@ -14,19 +15,13 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Observable;
-import java.util.Observer;
-import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class Repartiteur implements Observer 
+public class Repartiteur
 {
 
 	private static final Boolean SHOW_DEBUG_INFO = true;
@@ -35,11 +30,10 @@ public class Repartiteur implements Observer
 	private ArrayList<ServerDetails> mServersDetails; 
 	private ArrayList<ServerInterface> mCalculateurs;
 	private Boolean mIsModeSecurise;
-    private List<Thread> mCalculateurThreads;
-	protected Map mUnexecutedTasksToThreads;
+    private List<CalculateurThread> mCalculateurThreads;
+	protected List<Task> mTasks;
 
-	//private AtomicInteger mResult; // used asynchronously, use mutexes.
-	private int mResult;
+	private AtomicInteger mResult; // used asynchronously, use mutexes.
 	
 	/*
 	 * utilisation:
@@ -85,8 +79,7 @@ public class Repartiteur implements Observer
 	{
         mCalculateurs = new ArrayList<>();
         mCalculateurThreads = new ArrayList<>();
-		//mResult = new AtomicInteger();
-        mResult = 0;
+		mResult = new AtomicInteger();
         
 		File opFile = Repartiteur.getFilePath(operationsFile).toFile();
 		mOperations = getOperationsFromFile(opFile);
@@ -132,9 +125,9 @@ public class Repartiteur implements Observer
 		    System.out.println("We have " + mCalculateurs.size() + " servers.");
 		}
 		
-		//mResult.set(0);
+		mResult.set(0);
 		
-		if(mIsModeSecurise) 
+		if(!mIsModeSecurise) 
 		{
 			// split the operations in different tasks (group of operations) to be executed on threads
 			int nOperationByTask = (int) Math.ceil((double) mOperations.size() / (double) mCalculateurs.size());
@@ -145,16 +138,15 @@ public class Repartiteur implements Observer
 			    PrintTasksList(list_operations);
 			}
 			
-			// initialize and fill the atomic hashmap <task, threadId> where threadId is the index of the threads 
-			// that tried and failed to run said task
-			mUnexecutedTasksToThreads = new HashMap<List<Operation>, List<Integer>>();
-			for(List<Operation> tache : list_operations) 
+			// initialize and fill the list of tasks
+			int it = 0;
+			mTasks = new ArrayList<>();
+			for(List<Operation> operations : list_operations) 
 			{
-				mUnexecutedTasksToThreads.put(tache, new ArrayList<Integer>());
+				mTasks.add(new Task(operations, it++, TaskStatus.WAITING));
 			}
 			
-			// when a thread executes a task, remove it from the hashmap. If it successfully finished said task,
-			// it doesn't add it back.
+			// for each server, initialize and start its associated thread
 			for(int i = 0; i < mCalculateurs.size(); i++) 
 			{
 			    if (SHOW_DEBUG_INFO)
@@ -162,43 +154,73 @@ public class Repartiteur implements Observer
 			    	System.out.println("Creating thread " + i);
 			    }
 			    
-			    // instantiate the thread associated with each calculateur server and add it to the list
-			    Thread d = new Thread(new CalculateurThread(mCalculateurs.get(i), mUnexecutedTasksToThreads, list_operations.get(i), i, mResult));
-			    mCalculateurThreads.add(d);
+			    CalculateurThread ct = new CalculateurThread(mCalculateurs.get(i), i, mResult);
+			    mCalculateurThreads.add(ct);
+			    ct.start(); // the thread will wait for a task
 			}
 			
 			try 
 			{
-			    for (Thread t : mCalculateurThreads) 
+			    while (!AllTasksFinished()) 
 			    {
-			    	t.start();
-			    }
-			    
-			    // does this need to be synchronized?
-			    while (!mUnexecutedTasksToThreads.isEmpty()) 
-			    {
-			    	// threadMessage("Still waiting");
-			    	// Wait 10 seconds
-			    	for (Thread t : mCalculateurThreads)
-			    	{
-			    		t.join();
-			    		// calcThreads.get(0).join(10000);
-			    	}
+			    	LaunchTasksOnThreads();
+			    	
+			    	if(ImpossibleTask()) 
+			    		return;
+			    	
+			    	mResult.wait();
 			    }
 			} 
 			catch (InterruptedException e) 
 			{
 			    System.out.println(e.getMessage());
 			}
-			// Wait for child to finish ?
-			//System.out.println("Final result is " + mResult.get());
-			System.out.println("Final result is " + mResult);
+			
+			System.out.println("Final result is " + mResult.get());
 		}
 		else 
 		{
 			// are we supposed to do something here?
 		}
 		
+	}
+	
+	private Boolean AllTasksFinished()
+	{
+		for(Task t : mTasks)
+		{
+			if (t.mStatus != TaskStatus.DONE) 
+				return false;
+		}
+		return true;
+	}
+	
+	private Boolean ImpossibleTask()
+	{
+		for(Task t : mTasks)
+		{
+			if (t.mUnfitThreads.size() == mCalculateurThreads.size()) 
+			{
+				System.out.println("Task " + t.mId + " has too many operations to be executed on any of the servers.\n Exiting.");
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	private void LaunchTasksOnThreads()
+	{
+		for(Task t : mTasks) 
+		{
+			for(CalculateurThread ct : mCalculateurThreads)
+			{
+				if(!ct.isBusy() && !t.mUnfitThreads.contains(ct))
+				{
+					ct.launchTask(t);
+					t.notify();
+				}
+			}
+		}
 	}
 	
 	// prints the operations associated with a task, used for debugging
@@ -327,14 +349,6 @@ public class Repartiteur implements Observer
 
         return chunks;
     }
-
-	@Override
-	public void update(Observable o, Object arg) 
-	{
-		// TODO Auto-generated method stub
-		
-	}
-
     // Display a message, preceded by
     // the name of the current thread
     static void threadMessage(String message) 
