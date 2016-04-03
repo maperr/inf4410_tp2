@@ -72,7 +72,8 @@ public class Calculateur implements ServerInterface
 		for(Operation op : x)
 		{
 			int current;
-			if (op.type == OperationType.FIB)
+			//if (op.type == OperationType.FIB)
+			if (op.type == 0) 
 			{
 			    System.out.println("Doing fib("+op.value+")");
 				current = fib(op.value); 
