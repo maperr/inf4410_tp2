@@ -16,19 +16,45 @@ class CalculateurThread extends Thread
 {
     private static final Boolean SHOW_DEBUG_INFO = true;
     
+	public static enum CalculateurStatus
+	{
+		WAITING, RUNNING, DONE, REJECTED, BREAKDOWN
+	}
+    
 	private ServerInterface mServer; // reference to the remote server on which the task will be done
 	private Task mTask; // task to be executed
 	private int mIdentifier;  // identifier provided by the repartiteur
 	private AtomicInteger mResultRef;
+	private CalculateurStatus mStatus;
 	
-    public CalculateurThread(ServerInterface serv,
-			int id,
-			AtomicInteger result) 
+    public CalculateurThread(ServerInterface serv, int id) 
     {
 		mServer = serv;
 		mIdentifier = id;
-		mResultRef = result;
+		
+		// initialize the CalculateurThread as waiting for a task
+		mStatus = CalculateurStatus.WAITING;
 	}
+    
+    public CalculateurStatus getStatus()
+    {
+    	return mStatus;
+    }
+    
+    public CalculateurStatus setStatus(CalculateurStatus st)
+    {
+    	mStatus = st;
+    }
+    
+    public void setResult(AtomicInteger result)
+    {
+		mResultRef = result;
+    }
+    
+    public Task getTask()
+    {
+    	return mTask;
+    }
     
     public void launchTask(Task t) 
     {
@@ -39,16 +65,21 @@ class CalculateurThread extends Thread
 		mTask = t;
     }
     
-    public void outOfOrderRepair()
+    public boolean isOutOfOrder()
     {
-    	if(mTask != null && !this.isAlive() && mTask.mStatus == TaskStatus.RUNNING) {
-    		mTask.mStatus = TaskStatus.REJECTED;
+    	if(!this.isAlive() && mStatus == CalculateurStatus.RUNNING) {
+    		mStatus = CalculateurStatus.BREAKDOWN;
+    		mResultRef.notify();
+    		return true;
     	}
+    	return false;
     }
     
 	@Override
 	public void run()
 	{
+		mStatus = CalculateurStatus.RUNNING;
+		
 		if (SHOW_DEBUG_INFO) 
 		{
 			displayDebugInfo("I have been started work on task #" + mTask.mId + " of " + mTask.mOperations.size() + " operations");
@@ -58,19 +89,18 @@ class CalculateurThread extends Thread
 		
 		try 
 		{
-			mTask.mStatus = Task.TaskStatus.RUNNING;
 			res = mServer.executeTask(mTask.mOperations);
-			mTask.mStatus = Task.TaskStatus.DONE;
+			mStatus = CalculateurStatus.DONE;
 		} 
 		catch (RemoteException e) 
 		{
 			// do something clever like throwing a message to main thread
-			mTask.mStatus = Task.TaskStatus.REJECTED;
+			mStatus = CalculateurStatus.REJECTED;
 			displayDebugInfo(e.getMessage());
 		} 
 		catch (NullPointerException npe) 
 		{
-			mTask.mStatus = Task.TaskStatus.REJECTED;
+			mStatus = CalculateurStatus.REJECTED;
 			if (mServer == null)
 			{
 				displayDebugInfo("The server stub you tried to reach is not defined");
@@ -82,7 +112,7 @@ class CalculateurThread extends Thread
 		}
 		
 		// handle the result
-		if (mTask.mStatus == Task.TaskStatus.DONE) 
+		if (mStatus == CalculateurStatus.DONE) 
 		{	
 			mResultRef.getAndAdd(res % 5000);
 			mResultRef.set(mResultRef.get() % 5000);
@@ -92,7 +122,7 @@ class CalculateurThread extends Thread
 				displayDebugInfo("Adding " + res + " to result and applying % 5000, new current result is " + mResultRef.get());
 			}			
 		}
-		else if (mTask.mStatus == Task.TaskStatus.REJECTED)  // the calculateur refused the task, do not add the result to the sum
+		else if (mStatus == CalculateurStatus.REJECTED)  // the calculateur refused the task, do not add the result to the sum
 		{
 			mTask.mUnfitThreads.add(this);
 			if (SHOW_DEBUG_INFO)
@@ -101,7 +131,6 @@ class CalculateurThread extends Thread
 			}
 		} 
 
-		mTask = null;
 		synchronized(mResultRef)
 		{
 			mResultRef.notify();

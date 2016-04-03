@@ -1,12 +1,13 @@
 package ca.polymtl.inf4410.tp2.repartiteur;
 
-import ca.polymtl.inf4410.tp2.repartiteur.Task.TaskStatus;
+import ca.polymtl.inf4410.tp2.repartiteur.CalculateurThread.CalculateurStatus;
 import ca.polymtl.inf4410.tp2.shared.*;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -16,6 +17,7 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -127,53 +129,63 @@ public class Repartiteur
 		
 		mResult.set(0);
 		
-		if(!mIsModeSecurise) 
+		
+		// split the operations in different tasks (group of operations) to be executed on threads
+		int nOperationByTask = (int) Math.ceil((double) mOperations.size() / (double) mCalculateurs.size());
+		List<List<Operation>> list_operations = chunk(mOperations, nOperationByTask);
+		
+		if (SHOW_DEBUG_INFO)
 		{
-			// split the operations in different tasks (group of operations) to be executed on threads
-			int nOperationByTask = (int) Math.ceil((double) mOperations.size() / (double) mCalculateurs.size());
-			List<List<Operation>> list_operations = chunk(mOperations, nOperationByTask);
-			
-			if (SHOW_DEBUG_INFO)
+		    PrintTasksList(list_operations);
+		}
+		
+		// initialize and fill the tasks list
+		int it = 0;
+		mTasks = new ArrayList<>();
+		for(List<Operation> operations : list_operations) 
+		{
+			mTasks.add(new Task(operations, it));
+		}
+		
+		// for each server, initialize its associated thread
+		for(int i = 0; i < mCalculateurs.size(); i++) 
+		{
+		    if (SHOW_DEBUG_INFO)
+		    {
+		    	System.out.println("Creating thread " + i);
+		    }
+		    
+		    CalculateurThread ct = new CalculateurThread(mCalculateurs.get(i), i);
+		    mCalculateurThreads.add(ct);
+		}
+		
+		if(mIsModeSecurise) 
+		{
+			// in security mode, give the same atomic result object to all servers
+			for(CalculateurThread ct : mCalculateurThreads)
 			{
-			    PrintTasksList(list_operations);
+				ct.setResult(mResult);
 			}
 			
-			
-			
-			// for each server, initialize its associated thread
-			for(int i = 0; i < mCalculateurs.size(); i++) 
+			// in security mode, send each task on a different server
+			for(int i = 0; i < mTasks.size(); i++)
 			{
-			    if (SHOW_DEBUG_INFO)
-			    {
-			    	System.out.println("Creating thread " + i);
-			    }
-			    
-			    CalculateurThread ct = new CalculateurThread(mCalculateurs.get(i), i, mResult);
-			    mCalculateurThreads.add(ct);
-			}
-			
-			
-			// initialize, fill and launch the tasks
-			int it = 0;
-			mTasks = new ArrayList<>();
-			for(List<Operation> operations : list_operations) 
-			{
-				Task t = new Task(operations, it, TaskStatus.WAITING);
-				mTasks.add(t);
-				mCalculateurThreads.get(it).launchTask(t);
-				mCalculateurThreads.get(it).start(); 
-				it++;
+				CalculateurThread ct = mCalculateurThreads.get(i);
+				ct.launchTask(mTasks.get(i));
+				ct.start(); // start the thread
+				mTasks.remove(mTasks.get(i));
 			}
 
 			try 
 			{
-			    while (!allTasksFinished()) 
+			    while (true) 
 			    {
 			    	launchTasksOnThreads();
-
-			    	serverBreakDownCheck();
 			    	
 			    	if(impossibleTask()) 
+			    		return;
+			    	
+			    	if(allTasksFinished())
 			    		return;
 			    	
 			    	synchronized(mResult)
@@ -191,19 +203,68 @@ public class Repartiteur
 		}
 		else 
 		{
-			// are we supposed to do something here?
+			int sum = 0;
+			
+			// in unsecured mode, give each thread a different result object
+			List<AtomicInteger> results = new ArrayList<>();
+			for(CalculateurThread ct : mCalculateurThreads)
+			{
+				AtomicInteger ai = new AtomicInteger();
+				ai.set(0);
+				results.add(ai);
+				ct.setResult(ai);
+			}
+			
+			// in unsecured mode, send a task to all servers
+			for(Task t : mTasks) 
+			{
+				// launch the tasks
+				for(CalculateurThread ct : mCalculateurThreads)
+				{
+					ct.launchTask(t);
+					ct.start();
+				}
+				
+				while(!allTasksFinished()) { }
+				
+				// remove failed tasks
+				for(AtomicInteger ai : results) {
+					if(ai.get() == -1) 
+						results.remove(ai);
+				}
+				
+				int majority = (int)( mCalculateurThreads.size() / 2 ) + 1;
+				int[] result = getHighestNumberOfDuplicates(results);
+				int value = result[0];
+				int numberOfDuplicates = result[1];
+				if(numberOfDuplicates < majority)
+				{
+					System.out.println("The servers are not secure, we received too many invalid results\n Ending program.");
+					break;
+				}
+				sum += value;
+			}
 		}
 		
 	}
 	
 	private Boolean allTasksFinished()
 	{
-		for(Task t : mTasks)
+		if(mIsModeSecurise) 
 		{
-			if (t.mStatus != TaskStatus.DONE) 
-				return false;
+			return mTasks.isEmpty();
 		}
-		return true;
+		else 
+		{
+			for(CalculateurThread ct : mCalculateurThreads)
+			{
+				if (ct.getStatus() == CalculateurStatus.RUNNING)
+				{
+					return false;
+				}
+			}
+			return true;
+		}
 	}
 	
 	private Boolean impossibleTask()
@@ -223,25 +284,25 @@ public class Repartiteur
 	{
 		for(Task t : mTasks) 
 		{
-			if(t.mStatus == TaskStatus.REJECTED) 
+			for(CalculateurThread ct : mCalculateurThreads)
 			{
-				for(CalculateurThread ct : mCalculateurThreads)
+				if(ct.getStatus() == CalculateurStatus.REJECTED)
 				{
-					if(!ct.isAlive() && !t.mUnfitThreads.contains(ct))
-					{
-						ct.launchTask(t);
-						ct.run();
-					}
+					mTasks.add(ct.getTask());
+				} 
+				else if(ct.getStatus() == CalculateurStatus.BREAKDOWN)
+				{
+					mTasks.add(ct.getTask());
+					mCalculateurThreads.remove(ct);
+				}
+				
+				if(!ct.isAlive() && !t.mUnfitThreads.contains(ct))
+				{
+					ct.launchTask(t);
+					ct.run();
+					mTasks.remove(t);
 				}
 			}
-		}
-	}
-	
-	private void serverBreakDownCheck() 
-	{
-		for(CalculateurThread ct : mCalculateurThreads)
-		{
-			ct.outOfOrderRepair();
 		}
 	}
 	
@@ -258,6 +319,35 @@ public class Repartiteur
 		}
     }
 
+    // version modifiée de source: http://stackoverflow.com/a/31177643
+    private int[] getHighestNumberOfDuplicates(List<AtomicInteger> list)
+    {
+		int it = 0;
+		int[] arr = new int[list.size()];
+		for(AtomicInteger ai : list) {
+			arr[it++] = ai.get();
+		}
+		Arrays.sort(arr);
+		
+		// [0] -> value, [1] -> # of occurrence
+		int[] result = new int[2];
+		
+		int last = arr[0];
+		
+		result[0] = last;
+		result[1] = 1;
+		
+		for (int i = 1; i < arr.length; i++) { 
+		   if (arr[i] == last) {
+			   result[0] = last;
+			   result[1]++;
+		   }
+		   last = arr[i];
+		}
+		
+		return result;
+    }
+    	
 	private ServerInterface loadServerStub(String hostname, int port) throws NotBoundException {
 		ServerInterface stub = null;
 
