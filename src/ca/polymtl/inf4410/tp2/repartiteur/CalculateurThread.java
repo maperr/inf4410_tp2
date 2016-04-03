@@ -107,7 +107,7 @@ class CalculateurThread extends Observable implements Runnable
 		
 		if (SHOW_DEBUG_INFO)
 		{
-			displayDebugInfo("Adding " + res + "to current res(" + mResultRef.get() + ") and applying % 5000");
+			displayDebugInfo("Adding " + res + " to current res(" + mResultRef.get() + ") and applying % 5000");
 		}
 			
 		// Shouldn't do something || Notify the result ?
