@@ -66,7 +66,14 @@ public class Calculateur implements ServerInterface
 		{
 			throw new RemoteException("Task refused!");
 		}
-
+		
+		if(isMalicious())
+		{
+			System.out.println("Malicious operation");
+			Random rand = new Random();
+			return rand.nextInt((4999) + 1);
+		}
+		
 		int sum = 0;
 		
 		for(Operation op : x)
@@ -76,12 +83,12 @@ public class Calculateur implements ServerInterface
 			if (op.type == 0) 
 			{
 			    System.out.println("Doing fib("+op.value+")");
-				current = fib(op.value); 
+				current = Operations.fib(op.value); 
 			} 
 			else 
 			{
 			    System.out.println("Doing prime("+op.value+")");
-				current = prime(op.value);
+				current = Operations.prime(op.value);
 			}
 			// current = current % 5000;
 			sum = (sum + current % 5000) % 5000;
@@ -150,86 +157,5 @@ public class Calculateur implements ServerInterface
 		{
 			return false;
 		}
-	}
-	
-	private int fib(int x) throws RemoteException 
-	{
-		if (isMalicious()) 
-		{
-			System.out.println("Malicious operation");
-			Random rand = new Random();
-			return rand.nextInt((4999) + 1);
-		}
-		
-		if (x == 0)
-		{
-			return 0;
-		}
-		
-		if (x == 1)
-		{
-			return 1;
-		}
-		
-		return fib(x - 1) + fib(x - 2);
-	}
-
-	private int prime(int x) throws RemoteException {
-		if (isMalicious()) 
-		{
-		    System.out.println("Malicious operation");
-			Random rand = new Random();
-			return rand.nextInt((4999) + 1);
-		}
-		
-		int highestPrime = 0;
-		
-		for (int i = 1; i <= x; ++i)
-		{
-			if (isPrime(i) && x % i == 0 && i > highestPrime)
-			{
-				highestPrime = i;
-			}
-		}
-		
-		return highestPrime;
-	}
-
-	private boolean isPrime(int x) throws RemoteException 
-	{	
-	    /*	boolean result;
-		
-		if (x <= 1)
-			result = false;
-
-		for (int i = 2; i < x; ++i)
-		{
-			if (x % i == 0)
-				result = false;
-		}
-		
-		result = true;
-		
-		if (isMalicious()) {
-		        System.out.println("Malicious isPrime");
-			result = !result;
-		}
-		
-		return result; */
-
-	    if (x <= 1)
-	    {
-	    	return false;
-	    }
-	    
-	    for (int i = 2; i < x; ++i)
-		{
-		    if (x % i == 0)
-		    {
-		    	return false;
-		    }
-		}
-
-	    return true;
 	}
 }
