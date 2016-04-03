@@ -46,12 +46,7 @@ class CalculateurThread extends Thread
 		// infinite loop for the thread
 		while(true)
 		{
-			// thread waits until a task becomes available
-			try {
-				mTask.wait();
-			} catch (InterruptedException e1) {
-				e1.printStackTrace();
-			}
+			while(mTask == null) {} // wait for a task to become available
 			
 			if (SHOW_DEBUG_INFO) 
 			{

@@ -217,7 +217,6 @@ public class Repartiteur
 				if(!ct.isBusy() && !t.mUnfitThreads.contains(ct))
 				{
 					ct.launchTask(t);
-					t.notify();
 				}
 			}
 		}
