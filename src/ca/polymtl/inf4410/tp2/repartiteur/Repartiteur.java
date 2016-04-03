@@ -145,7 +145,7 @@ public class Repartiteur implements Observer
 			
 			// initialize and fill the atomic hashmap <task, threadId> where threadId is the index of the threads 
 			// that tried and failed to run said task
-			mUnexecutedTasksToThreads = Collections.synchronizedMap(new HashMap<List<Operation>, List<Integer>>());
+			mUnexecutedTasksToThreads = new HashMap<List<Operation>, List<Integer>>();
 			for(List<Operation> tache : list_operations) 
 			{
 				mUnexecutedTasksToThreads.put(tache, new ArrayList<Integer>());
@@ -172,8 +172,7 @@ public class Repartiteur implements Observer
 			    	t.start();
 			    }
 			    
-			    //calcThreads.get(0).start();
-			    //while (calcThreads.get(0).isAlive()) {
+			    // does this need to be synchronized?
 			    while (!mUnexecutedTasksToThreads.isEmpty()) 
 			    {
 			    	// threadMessage("Still waiting");
