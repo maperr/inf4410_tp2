@@ -135,7 +135,7 @@ public class Repartiteur implements Observer
 		if(mIsModeSecurise) 
 		{
 			// split the operations in different tasks (group of operations) to be executed on threads
-			List<List<Operation>> list_operations = splitList(mOperations, mCalculateurs.size() - 1);
+			List<List<Operation>> list_operations = splitList(mOperations, mCalculateurs.size());
 			
 			if (SHOW_DEBUG_INFO)
 			{
