@@ -170,7 +170,7 @@ public class Repartiteur implements Observer
 			    }
 			    
 			    // instantiate the thread associated with each calculateur server and add it to the list
-			    Thread d = new Thread(new CalculateurThread(mCalculateurs.get(i), mUnexecutedTasksToThreads, tasks.get(i), mResult));
+			    Thread d = new Thread(new CalculateurThread(mCalculateurs.get(i), mUnexecutedTasksToThreads, tasks.get(i), mResult, i));
 			    mCalculateurThreads.add(d);
 			}
 			

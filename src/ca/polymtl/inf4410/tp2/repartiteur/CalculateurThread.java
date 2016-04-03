@@ -9,6 +9,7 @@ import java.util.Observable;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import ca.polymtl.inf4410.tp2.shared.*;
+import ca.polymtl.inf4410.tp2.shared.Task.TaskStatus;
 
 class CalculateurThread extends Observable implements Runnable
 {
@@ -18,16 +19,15 @@ class CalculateurThread extends Observable implements Runnable
 	private CalculateurServer mServer; // reference to the remote server on which the task will be done
 	private Map mParentUnexecutedTasks;
 	private AtomicInteger mResultRef;
+	private int mIdentifier;
 	
-    public CalculateurThread(CalculateurServer serv,
-			Map unexecutedTasksToThreads, 
-			Task task, 
-			AtomicInteger result) 
+    public CalculateurThread(CalculateurServer serv, Map unexecutedTasksToThreads, Task task, AtomicInteger result, int id) 
     {
 		mServer = serv;
 		mParentUnexecutedTasks = unexecutedTasksToThreads;
 		mResultRef = result;
 		mTask = task;
+		mIdentifier = id;
 	}
 
 	public int getIdentifier()
@@ -40,28 +40,27 @@ class CalculateurThread extends Observable implements Runnable
 	{
 		if (SHOW_DEBUG_INFO) 
 		{
-			displayDebugInfo("I have been created with task of size " + mOperations.size() + " operations");
+			displayDebugInfo("I have been created with task of size " + mTask.getOperations().size() + " operations");
 	    }
 		
-		mStatus = TaskStatus.SUBMITTED;
+		mTask.setStatus(TaskStatus.SUBMITTED);
 		int res = -1;		
 		
 		try 
 		{
-			mStatus = TaskStatus.WORKING;
-			res = mServer.executeTask(mOperations);
-			
-			mStatus = TaskStatus.DONE;
+			mTask.setStatus(TaskStatus.WORKING);
+			res = mServer.compute(mTask);
+			mTask.setStatus(TaskStatus.DONE);
 		} 
 		catch (RemoteException e) 
 		{
 			// do something clever like throwing a message to main thread
-			mStatus = TaskStatus.REJECTED_LOAD;
+			mTask.setStatus(TaskStatus.REJECTED);
 			displayDebugInfo(e.getMessage());
 		} 
 		catch (NullPointerException npe) 
 		{
-			mStatus = TaskStatus.REJECTED_LOAD;
+			mTask.setStatus(TaskStatus.REJECTED);
 			if (mServer == null)
 			{
 				displayDebugInfo("The server stub you tried to reach is not defined");
@@ -73,12 +72,12 @@ class CalculateurThread extends Observable implements Runnable
 		}
 		
 		// handle the result
-		if (mStatus == TaskStatus.DONE) 
+		if (mTask.getStatus() == TaskStatus.DONE) 
 		{
 			// remove task from map
 			synchronized(mParentUnexecutedTasks)
 			{
-				mParentUnexecutedTasks.remove(mOperations);
+				mParentUnexecutedTasks.remove(mTask);
 			}
 			
 			mResultRef.getAndAdd(res % 5000);
@@ -89,12 +88,12 @@ class CalculateurThread extends Observable implements Runnable
 				displayDebugInfo("Adding " + res + " to result and applying % 5000, new current result is " + mResultRef.get());
 			}			
 		}
-		else if (mStatus == TaskStatus.REJECTED_LOAD)  // the calculateur refused the task, do not add the result to the sum
+		else if (mTask.getStatus() == TaskStatus.REJECTED)  // the calculateur refused the task, do not add the result to the sum
 		{
 			// add calculateur to task in map
 			synchronized(mParentUnexecutedTasks)
 			{
-				List<Integer> calculateurs = (List<Integer>) mParentUnexecutedTasks.get(mOperations);
+				List<Integer> calculateurs = (List<Integer>) mParentUnexecutedTasks.get(mTask);
 				calculateurs.add(mIdentifier);
 			}
 			

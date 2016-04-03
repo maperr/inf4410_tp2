@@ -37,6 +37,11 @@ public class Task
 		return mStatus;
 	}
 	
+	public void setStatus(TaskStatus s)
+	{
+		mStatus = s;
+	}
+	
 	// prints the operations associated with a task, used for debugging
 	public void printTask()
 	{
