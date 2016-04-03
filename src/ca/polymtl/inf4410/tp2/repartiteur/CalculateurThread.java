@@ -19,15 +19,13 @@ class CalculateurThread extends Observable implements Runnable
 	private List<Operation> mOperations; // task to be executed
 	private int mIdentifier;  // identifier provided by the repartiteur
 	private Map mParentUnexecutedTasks;
-	//private AtomicInteger mResultRef;
-	private int mResultRef;
+	private AtomicInteger mResultRef;
 	
     public CalculateurThread(ServerInterface serv,
 			Map unexecutedTasksToThreads, 
 			List<Operation> ops, 
 			int id,
-			int result)
-			//AtomicInteger result) 
+			AtomicInteger result) 
     {
     	mOperations = ops;
 		mServer = serv;
@@ -87,15 +85,12 @@ class CalculateurThread extends Observable implements Runnable
 				mParentUnexecutedTasks.remove(mOperations);
 			}
 			
-			mResultRef += (res % 5000);
-			
-			//mResultRef.getAndAdd(res % 5000);
-			//mResultRef.set(mResultRef.get() % 5000);
+			mResultRef.getAndAdd(res % 5000);
+			mResultRef.set(mResultRef.get() % 5000);
 			
 			if (SHOW_DEBUG_INFO)
 			{
-				//displayDebugInfo("Adding " + res + " to result and applying % 5000, new current result is " + mResultRef.get());
-				displayDebugInfo("Adding " + res + " to result and applying % 5000, new current result is " + mResultRef);
+				displayDebugInfo("Adding " + res + " to result and applying % 5000, new current result is " + mResultRef.get());
 			}			
 		}
 		else if (mStatus == TaskStatus.REJECTED_LOAD)  // the calculateur refused the task, do not add the result to the sum
