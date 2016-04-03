@@ -100,7 +100,10 @@ class CalculateurThread extends Thread
 			} 
 
 			mTask = null;
-			mResultRef.notify();
+			synchronized(mResultRef)
+			{
+				mResultRef.notify();
+			}
 		}
 	}
 	

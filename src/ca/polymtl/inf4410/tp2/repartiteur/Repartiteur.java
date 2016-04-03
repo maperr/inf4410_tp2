@@ -168,7 +168,10 @@ public class Repartiteur
 			    	if(ImpossibleTask()) 
 			    		return;
 			    	
-			    	mResult.wait();
+			    	synchronized(mResult)
+			    	{
+			    		mResult.wait();
+			    	}
 			    }
 			} 
 			catch (InterruptedException e) 
