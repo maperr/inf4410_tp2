@@ -60,7 +60,8 @@ public class Calculateur implements CalculateurServer
 		// use the default, restrictive security manager
 		System.setSecurityManager(new SecurityManager());
 		Registry registry = LocateRegistry.getRegistry(port);
-		registry.rebind("CalculateurServer", server);
+		CalculateurServer stub = (CalculateurServer) UnicastRemoteObject.exportObject(server, 0);
+		registry.rebind("CalculateurServer", stub);
 		System.out.println("Server ready to receive tasks.");
 		return;
 	}
