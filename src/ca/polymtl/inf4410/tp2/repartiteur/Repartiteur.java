@@ -18,6 +18,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Observable;
@@ -25,244 +26,320 @@ import java.util.Observer;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class Repartiteur implements Observer {
+public class Repartiteur implements Observer 
+{
 
 	private static final Boolean SHOW_DEBUG_INFO = true;
-
+	
 	private List<Operation> mOperations;
-	private ArrayList<ServerDetails> mServersDetails;
+	private ArrayList<ServerDetails> mServersDetails; 
 	private ArrayList<ServerInterface> mCalculateurs;
 	private Boolean mIsModeSecurise;
-	private List<Thread> mCalculateurThreads;
+    private List<Thread> mCalculateurThreads;
 	protected Map mUnexecutedTasksToThreads;
 
 	private AtomicInteger mResult; // used asynchronously, use mutexes.
-
+	
 	/*
-	 * utilisation: Repartiteur nomFichierOperations nomFichierServerDetails
-	 * modeSecurise(true/false)
+	 * utilisation:
+	 *		Repartiteur nomFichierOperations nomFichierServerDetails modeSecurise(true/false)
 	 */
-	public static void main(String[] args) {
-		if (args.length <= 2) {
+	public static void main(String[] args) 
+	{
+		if (args.length <= 2) 
+		{
 			System.out.println("Invalid number of arguments");
-		} else if (args.length == 3) {
-			if (Files.exists(getFilePath(args[0])) && Files.exists(getFilePath(args[1]))) {
-				if (args[2].equals("true") || args[2].equals("false")) {
+		}
+		else if (args.length == 3)
+		{
+			if (Files.exists(getFilePath(args[0])) && Files.exists(getFilePath(args[1])))
+			{
+				if(args[2].equals("true") || args[2].equals("false")) {
 					Repartiteur r = new Repartiteur(args[0], args[1], args[2]);
 					r.run();
-				} else {
+				}
+				else
+				{
 					throw new IllegalArgumentException("Invalid operation mode");
 				}
-			} else {
+			}
+			else 
+			{
 				throw new IllegalArgumentException("File not found");
 			}
-		} else {
-			throw new IllegalArgumentException("Too many arguments");
+		}
+		else
+		{
+		 	throw new IllegalArgumentException("Too many arguments");
 		}
 	}
-
-	private static Path getFilePath(String fileName) {
+	
+	private static Path getFilePath(String fileName) 
+	{
 		String rc = "./" + fileName;
 		return Paths.get(rc);
 	}
-
-	public Repartiteur(String operationsFile, String serverFile, String modeSecurise) {
-		mCalculateurs = new ArrayList<>();
-		mCalculateurThreads = new ArrayList<>();
+	
+	public Repartiteur(String operationsFile, String serverFile, String modeSecurise) 
+	{
+        mCalculateurs = new ArrayList<>();
+        mCalculateurThreads = new ArrayList<>();
 		mResult = new AtomicInteger();
-
+		
 		File opFile = Repartiteur.getFilePath(operationsFile).toFile();
 		mOperations = getOperationsFromFile(opFile);
-
+		
 		File sFile = Repartiteur.getFilePath(serverFile).toFile();
 		mServersDetails = getServerDetailsFromFile(sFile);
-
+		
 		mIsModeSecurise = Boolean.valueOf(modeSecurise);
 	}
-
-	public void run() {
+	
+	public void run()
+	{
 		// thread pour chaque serveur
-		// check 50% + 1 si tous d'accord (majorite) -> continue sinon envoie a
-		// un autre
+		// check 50% + 1 si tous d'accord (majorite) -> continue sinon envoie a un autre
 		// creer fichier configuration au lieu hardcode
-
-		if (System.getSecurityManager() == null) {
-			System.setSecurityManager(new SecurityManager());
+		
+		if(System.getSecurityManager() == null) 
+		{
+			System.setSecurityManager(new SecurityManager());	
 		}
-
+		
 		// create the server stubs and add them to the list of available servers
-		for (ServerDetails si : mServersDetails) {
-			try {
-				mCalculateurs.add(loadServerStub(si.ip_address, si.port));
-			} catch (NotBoundException e) // server not reachable
-			{
-				System.out.println("Server stub at " + si.ip_address + ":" + si.port
-						+ " is unreachable, not adding it to the server list.");
-			}
+		for(ServerDetails si : mServersDetails)
+		{
+		    try
+		    {
+		    	mCalculateurs.add(loadServerStub(si.ip_address, si.port));
+		    } 
+		    catch (NotBoundException e) // server not reachable
+		    {
+		    	System.out.println("Server stub at " + si.ip_address + ":" + si.port + " is unreachable, not adding it to the server list.");
+		    }
 		}
 
-		if (SHOW_DEBUG_INFO) {
-			System.out.println("We have " + mCalculateurs.size() + " servers.");
+		if (SHOW_DEBUG_INFO) 
+		{
+		    System.out.println("We have " + mCalculateurs.size() + " servers.");
 		}
-
+		
 		mResult.set(0);
-
-		if (mIsModeSecurise) {
-			// split the operations in different tasks (group of operations) to
-			// be executed on threads
+		
+		if(mIsModeSecurise) 
+		{
+			// split the operations in different tasks (group of operations) to be executed on threads
 			List<List<Operation>> list_operations = splitList(mOperations, mCalculateurs.size());
-
-			if (SHOW_DEBUG_INFO) {
-				PrintTasksList(list_operations);
+			
+			if (SHOW_DEBUG_INFO)
+			{
+			    PrintTasksList(list_operations);
 			}
-
-			// initialize and fill the atomic hashmap <task, threadId> where
-			// threadId is the index of the threads
+			
+			// initialize and fill the atomic hashmap <task, threadId> where threadId is the index of the threads 
 			// that tried and failed to run said task
 			mUnexecutedTasksToThreads = Collections.synchronizedMap(new HashMap<List<Operation>, List<Integer>>());
-			for (List<Operation> tache : list_operations) {
+			for(List<Operation> tache : list_operations) 
+			{
 				mUnexecutedTasksToThreads.put(tache, new ArrayList<Integer>());
 			}
-
-			// when a thread executes a task, remove it from the hashmap. If it
-			// successfully finished said task,
+			
+			// when a thread executes a task, remove it from the hashmap. If it successfully finished said task,
 			// it doesn't add it back.
-			for (int i = 0; i < mCalculateurs.size(); i++) {
-				if (SHOW_DEBUG_INFO) {
-					System.out.println("Creating thread " + i);
-				}
-
-				// instantiate the thread associated with each calculateur
-				// server and add it to the list
-				Thread d = new Thread(new CalculateurThread(mCalculateurs.get(i), mUnexecutedTasksToThreads,
-						list_operations.get(i), i, mResult));
-				mCalculateurThreads.add(d);
+			for(int i = 0; i < mCalculateurs.size(); i++) 
+			{
+			    if (SHOW_DEBUG_INFO)
+			    {
+			    	System.out.println("Creating thread " + i);
+			    }
+			    
+			    // instantiate the thread associated with each calculateur server and add it to the list
+			    Thread d = new Thread(new CalculateurThread(mCalculateurs.get(i), mUnexecutedTasksToThreads, list_operations.get(i), i, mResult));
+			    mCalculateurThreads.add(d);
 			}
-
-			try {
-				for (Thread t : mCalculateurThreads) {
-					t.start();
-				}
-
-				// calcThreads.get(0).start();
-				// while (calcThreads.get(0).isAlive()) {
-				while (!mUnexecutedTasksToThreads.isEmpty()) {
-					// threadMessage("Still waiting");
-					// Wait 10 seconds
-					for (Thread t : mCalculateurThreads) {
-						t.join(5000);
-						// calcThreads.get(0).join(10000);
-					}
-				}
-			} catch (InterruptedException e) {
-				System.out.println(e.getMessage());
+			
+			try 
+			{
+			    for (Thread t : mCalculateurThreads) 
+			    {
+			    	t.start();
+			    }
+			    
+			    //calcThreads.get(0).start();
+			    //while (calcThreads.get(0).isAlive()) {
+			    while (!mUnexecutedTasksToThreads.isEmpty()) 
+			    {
+			    	// threadMessage("Still waiting");
+			    	// Wait 10 seconds
+			    	for (Thread t : mCalculateurThreads)
+			    	{
+			    		t.join(5000);
+			    		// calcThreads.get(0).join(10000);
+			    	}
+			    	
+			    	// debugging
+			    	new Thread( new Runnable() {
+			            public void run()  {
+			            	try {
+								Thread.sleep( 3000 );
+								PrintHashMapContents();
+							} catch (InterruptedException e) {
+								// e.printStackTrace();
+							} 
+			            }
+			         }).start();
+			    }
+			} 
+			catch (InterruptedException e) 
+			{
+			    System.out.println(e.getMessage());
 			}
 			// Wait for child to finish ?
 			System.out.println("Result is :" + mResult.get());
-		} else {
+		}
+		else 
+		{
 			// are we supposed to do something here?
 		}
-
+		
 	}
-
+	
+	// prints the current contents of the hashmap for debugging info
+	private void PrintHashMapContents() 
+	{
+		Iterator it = mUnexecutedTasksToThreads.entrySet().iterator();
+	    while (it.hasNext()) {
+	        Map.Entry pair = (Map.Entry)it.next();
+	        System.out.println(pair.getKey() + " = " + pair.getValue());
+	        it.remove(); // avoids a ConcurrentModificationException
+	    }
+	}
+	
 	// prints the operations associated with a task, used for debugging
-	private void PrintTasksList(List<List<Operation>> listOfOps) {
-		for (int i = 0; i < listOfOps.size(); i++) {
-			System.out.println("Task " + i + ":");
-			for (int j = 0; j < listOfOps.get(i).size(); j++) {
-				System.out.println("\t " + (listOfOps.get(i).get(j).type == 0 ? "Fib " : "Prime ")
-						+ listOfOps.get(i).get(j).value);
-			}
+    private void PrintTasksList(List<List<Operation>> listOfOps) 
+    {
+		for (int i = 0; i < listOfOps.size() ; i++) 
+		{
+		    System.out.println("Task " + i + ":");
+		    for (int j = 0; j < listOfOps.get(i).size() ; j++) 
+		    {
+		    	System.out.println("\t " + (listOfOps.get(i).get(j).type == 0 ? "Fib " : "Prime ") + listOfOps.get(i).get(j).value);
+		    }
 		}
-	}
+    }
 
 	private ServerInterface loadServerStub(String hostname, int port) throws NotBoundException {
 		ServerInterface stub = null;
 
-		try {
+		try 
+		{
 			Registry registry = LocateRegistry.getRegistry(hostname, port);
 			stub = (ServerInterface) registry.lookup("server");
-		} catch (NotBoundException e) {
+		} 
+		catch (NotBoundException e) 
+		{
 			// System.out.println("Erreur: Le nom '" + e.getMessage()
-			// + "' n'est pas defini dans le registre.");
+			//		+ "' n'est pas defini dans le registre.");
 			throw new NotBoundException();
-		} catch (AccessException e) {
-			// System.out.println("Erreur: " + e.getMessage());
+		} 
+		catch (AccessException e) 
+		{
+		    //System.out.println("Erreur: " + e.getMessage());
 			throw new NotBoundException();
-		} catch (RemoteException e) {
-			// System.out.println("Erreur: " + e.getMessage());
+		} 
+		catch (RemoteException e) 
+		{
+		    //System.out.println("Erreur: " + e.getMessage());
 			throw new NotBoundException();
 		}
 
 		return stub;
 	}
-
-	private ArrayList<ServerDetails> getServerDetailsFromFile(File f) {
+	
+	private ArrayList<ServerDetails> getServerDetailsFromFile(File f)
+	{
 		ArrayList<ServerDetails> servers = new ArrayList<ServerDetails>();
-
-		try (BufferedReader br = new BufferedReader(new FileReader(f))) {
-			String line;
-			while ((line = br.readLine()) != null) {
-				String[] splited = line.split(" ");
-				System.out.println(splited[0] + " : " + splited[1]);
-				servers.add(new ServerDetails(splited[0], Integer.parseInt(splited[1])));
-			}
-		} catch (IOException e) {
-			throw new IllegalArgumentException("Unable to read file properly");
+		
+		try (BufferedReader br = new BufferedReader(new FileReader(f)))
+		{
+		    String line;
+		    while ((line = br.readLine()) != null) 
+		    {
+		    	String[] splited = line.split(" ");
+		    	System.out.println(splited[0] + " : " + splited[1]);
+		    	servers.add(new ServerDetails(splited[0], Integer.parseInt(splited[1])));
+		    }
 		}
-
+		catch (IOException e) 
+		{
+			throw new IllegalArgumentException("Unable to read file properly");
+		} 
+		
 		return servers;
 	}
-
-	private List<Operation> getOperationsFromFile(File f) {
+	
+	private List<Operation> getOperationsFromFile(File f) 
+	{
 		ArrayList<Operation> ops = new ArrayList<Operation>();
-
-		try (BufferedReader br = new BufferedReader(new FileReader(f))) {
-			String line;
-			while ((line = br.readLine()) != null) {
-				String[] splited = line.split(" ");
-				// OperationType type;
-				int type;
-				if (splited[0].equals("fib")) {
-					// type = OperationType.FIB;
-					type = 0;
-				} else if (splited[0].equals("prime")) {
-					// type = OperationType.PRIME;
-					type = 1;
-				} else {
-					throw new IllegalArgumentException("File not correctly formatted");
-				}
-
-				ops.add(new Operation(type, Integer.parseInt(splited[1])));
-			}
-		} catch (IOException e) {
-			throw new IllegalArgumentException("Unable to read file properly");
+		
+		try (BufferedReader br = new BufferedReader(new FileReader(f))) 
+		{
+		    String line;
+		    while ((line = br.readLine()) != null) 
+		    {
+		    	String[] splited = line.split(" ");
+		    	// OperationType type;
+			int type;
+			if(splited[0].equals("fib")) 
+	    	{
+		    //type = OperationType.FIB;
+		        type = 0;
+	    	} 
+	    	else if (splited[0].equals("prime")) 
+	    	{
+		    // type = OperationType.PRIME;
+		        type = 1;
+	    	} 
+	    	else
+	    	{
+	    		throw new IllegalArgumentException("File not correctly formatted");
+	    	}
+	    	
+		    	ops.add(new Operation(type,Integer.parseInt(splited[1])));
+		    }
 		}
-
+		catch (IOException e) 
+		{
+			throw new IllegalArgumentException("Unable to read file properly");
+		} 
+		
 		return ops;
 	}
-
+	
 	private List<List<Operation>> splitList(List<Operation> list, int nbCalculateurs) {
 		int nbLists = list.size() / nbCalculateurs;
-		List<List<Operation>> parts = new ArrayList<List<Operation>>();
-
-		for (int i = 0; i < list.size(); i += nbLists) {
-			parts.add(new ArrayList<Operation>(list.subList(i, Math.min(list.size(), i + nbLists))));
-		}
-
-		return parts;
+	    List<List<Operation>> parts = new ArrayList<List<Operation>>();
+	    
+	    for (int i = 0; i < list.size(); i += nbLists) 
+	    {
+	        parts.add(new ArrayList<Operation>(list.subList(i, Math.min(list.size(), i + nbLists))));
+	    }
+	    
+	    return parts;
 	}
 
 	@Override
-	public void update(Observable o, Object arg) {
+	public void update(Observable o, Object arg) 
+	{
 		// TODO Auto-generated method stub
-
+		
 	}
 
-	// Display a message, preceded by
-	// the name of the current thread
-	static void threadMessage(String message) {
-		String threadName = Thread.currentThread().getName();
-		System.out.format("%s: %s%n", threadName, message);
-	}
+    // Display a message, preceded by
+    // the name of the current thread
+    static void threadMessage(String message) 
+    {
+        String threadName = Thread.currentThread().getName();
+        System.out.format("%s: %s%n", threadName, message);
+    }
 }

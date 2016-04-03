@@ -65,11 +65,12 @@ class CalculateurThread extends Observable implements Runnable
 		catch (RemoteException e) 
 		{
 			// do something clever like throwing a message to main thread
-			displayDebugInfo(e.getMessage());
 			mStatus = TaskStatus.REJECTED_LOAD;
+			displayDebugInfo(e.getMessage());
 		} 
 		catch (NullPointerException npe) 
 		{
+			mStatus = TaskStatus.REJECTED_LOAD;
 			if (mServer == null)
 			{
 				displayDebugInfo("The server stub you tried to reach is not defined");
@@ -80,42 +81,43 @@ class CalculateurThread extends Observable implements Runnable
 			}
 		}
 		
-		if (mStatus == TaskStatus.REJECTED_LOAD) 
+		// handle the result
+		if (mStatus == TaskStatus.DONE) 
 		{
-			if (SHOW_DEBUG_INFO)
-			{
-				displayDebugInfo("Task was rejected");
-			}
-			// // Put back the task into the map
-			// currentMapStatus.add(identifiant);
-			// synchronized (parentUnexecutedTasks) {
-			// 	parentUnexecutedTasks.put(operations, currentMapStatus);
-			// 	}
-			
-		} 
-		else if (mStatus == TaskStatus.DONE) 
-		{
-			// TODO: Should check the concurrency on the list
-			// Save the list
-			List<Integer> currentMapStatus = (List<Integer>) mParentUnexecutedTasks.get(mOperations);
-			// Remove task from map
+			// remove task from map
 			synchronized(mParentUnexecutedTasks)
 			{
 				mParentUnexecutedTasks.remove(mOperations);
 			}
-		}
-		
-		if (SHOW_DEBUG_INFO)
-		{
-			displayDebugInfo("Adding " + res + " to current res(" + mResultRef.get() + ") and applying % 5000");
-		}
+				
+			mResultRef.getAndAdd(res % 5000);
+			mResultRef.set(mResultRef.get() % 5000);
 			
+			if (SHOW_DEBUG_INFO)
+			{
+				displayDebugInfo("Adding " + res + " to current res(" + mResultRef.get() + ") and applying % 5000");
+			}			
+		}
+		else if (mStatus == TaskStatus.REJECTED_LOAD)  // the calculateur refused the task, do not add the result to the sum
+		{
+			// add calculateur to task in map
+			synchronized(mParentUnexecutedTasks)
+			{
+				List<Integer> calculateurs = (List<Integer>) mParentUnexecutedTasks.get(mOperations);
+				calculateurs.add(mIdentifier);
+			}
+			
+			if (SHOW_DEBUG_INFO)
+			{
+				displayDebugInfo("Task was rejected, adding " + mIdentifier + " to list of calculateurs that failed the task");
+			}
+		} 
+		
 		// Shouldn't do something || Notify the result ?
-		mResultRef.getAndAdd(res % 5000);
-		mResultRef.set(mResultRef.get() % 5000);
 		// TODO Tell main thread of the result
 		//setChanged();
 		//notifyObservers(res);
+		return;
 	}
 	
 	// used to identify thread while printing debug info
