@@ -83,10 +83,13 @@ class CalculateurThread extends Thread
 		while(true)
 		{
 			// wait to be notified of a new task to execute
-			try {
-				mTask.wait();
-			} catch (InterruptedException e1) {
-				e1.printStackTrace();
+			synchronized(mTask) {
+				try {
+					mTask.wait();
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 			
 			mStatus = CalculateurStatus.RUNNING;
