@@ -1,6 +1,7 @@
 package ca.polymtl.inf4410.tp2.repartiteur;
 
 import ca.polymtl.inf4410.tp2.repartiteur.CalculateurThread.CalculateurStatus;
+import ca.polymtl.inf4410.tp2.repartiteur.Task.TaskStatus;
 import ca.polymtl.inf4410.tp2.shared.*;
 
 import java.io.BufferedReader;
@@ -179,8 +180,6 @@ public class Repartiteur
 				CalculateurThread ct = mCalculateurThreads.get(i);
 				ct.launchTask(mTasks.get(i));
 			}
-			// clear the list of tasks
-			mTasks.clear();
 			
 			try 
 			{
@@ -194,7 +193,7 @@ public class Repartiteur
 			    	if(allTasksFinished())
 			    		return;
 			    	
-			    	launchTasksOnThreads();
+			    	launchRejectedTasksOnThreads();
 			    	
 			    	synchronized(result)
 			    	{
@@ -264,9 +263,16 @@ public class Repartiteur
 	{
 		if(mIsModeSecurise) 
 		{
-			return mTasks.isEmpty();
+			for(Task t : mTasks)
+			{
+				if (t.mStatus != TaskStatus.DONE)
+				{
+					return false;
+				}
+			}
+			return true;
 		}
-		else 
+		else  // TODO (this isnt good)
 		{
 			for(CalculateurThread ct : mCalculateurThreads)
 			{
@@ -292,28 +298,22 @@ public class Repartiteur
 		return false;
 	}
 	
-	private void launchTasksOnThreads()
+	private void launchRejectedTasksOnThreads()
 	{
-		for (Iterator<Task> iterator = mTasks.iterator(); iterator.hasNext(); ) 
+		for (Task t : mTasks)
 		{
-		    Task t = iterator.next();
-		    for(CalculateurThread ct : mCalculateurThreads)
+			if (t.mStatus == TaskStatus.REJECTED)
 			{
-				if(ct.getStatus() == CalculateurStatus.REJECTED)
+			    for(CalculateurThread ct : mCalculateurThreads)
 				{
-					mTasks.add(ct.getTask());
-				} 
-				else if(ct.getStatus() == CalculateurStatus.BREAKDOWN)
-				{
-					mTasks.add(ct.getTask());
-					mCalculateurThreads.remove(ct);
-				}
-				
-				if(!ct.isAlive() && !t.mUnfitThreads.contains(ct))
-				{
-					ct.launchTask(t);
-					ct.run();
-					iterator.remove();
+					if(ct.getStatus() == CalculateurStatus.WAITING && !t.mUnfitThreads.contains(ct))
+					{
+						ct.launchTask(t);
+					} 
+					else if(ct.getStatus() == CalculateurStatus.BREAKDOWN)
+					{
+						mCalculateurThreads.remove(ct);
+					}
 				}
 			}
 		}

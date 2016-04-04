@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Observable;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import ca.polymtl.inf4410.tp2.repartiteur.Task.TaskStatus;
 import ca.polymtl.inf4410.tp2.shared.*;
 
 class CalculateurThread extends Thread
@@ -16,15 +18,14 @@ class CalculateurThread extends Thread
     
 	public static enum CalculateurStatus
 	{
-		WAITING, RUNNING, DONE, REJECTED, BREAKDOWN
+		WAITING, RUNNING, DONE, BREAKDOWN
 	}
     
 	private ServerInterface mServer; // reference to the remote server on which the task will be done
-	private Task mTask; // task to be executed
 	private AtomicInteger mResultRef;
 	private CalculateurStatus mStatus;
 	private int mIdentifier;
-	private boolean mGo;
+	public Task mTask; // task to be executed
 	
     public CalculateurThread(int id, ServerInterface serv) 
     {
@@ -32,8 +33,6 @@ class CalculateurThread extends Thread
 		mServer = serv;
 		// initialize the CalculateurThread as waiting for a task
 		mStatus = CalculateurStatus.WAITING;
-		// don't start execution on thead until, it has a task
-		mGo = false;
 	}
     
     public CalculateurStatus getStatus()
@@ -63,23 +62,18 @@ class CalculateurThread extends Thread
 			displayDebugInfo("Associated with task " + t.mId);
 	    }
 		mTask = t;
-		mGo = true;
+		mTask.mStatus = TaskStatus.RUNNING;
+		mTask.notify();
     }
     
-    public boolean isOutOfOrder()
+    /*public boolean isOutOfOrder() // TODO (need to check if the calculateur is dead)
     {
-    	if(!this.isAlive() && mStatus == CalculateurStatus.RUNNING) {
     		if (SHOW_DEBUG_INFO) 
     		{
         		displayDebugInfo("out of order!");
     	    }
     		
-    		mStatus = CalculateurStatus.BREAKDOWN;
-    		mResultRef.notify();
-    		return true;
-    	}
-    	return false;
-    }
+    }*/
     
 	@Override
 	public void run()
@@ -87,7 +81,12 @@ class CalculateurThread extends Thread
 		// main thread loop, each loop executes a task on the server.
 		while(true)
 		{
-			while(mGo == false) {}
+			// wait to be notified of a new task to execute
+			try {
+				mTask.wait();
+			} catch (InterruptedException e1) {
+				e1.printStackTrace();
+			}
 			
 			mStatus = CalculateurStatus.RUNNING;
 			
@@ -101,17 +100,24 @@ class CalculateurThread extends Thread
 			try 
 			{
 				res = mServer.executeTask(mTask.mOperations);
-				mStatus = CalculateurStatus.DONE;
+				if (SHOW_DEBUG_INFO)
+				{
+					displayDebugInfo("Adding " + res + " to result and applying % 5000, new current result is " + mResultRef.get());
+				}
+				mResultRef.getAndAdd(res % 5000);
+				mResultRef.set(mResultRef.get() % 5000);
+				mTask.mStatus = TaskStatus.DONE;
 			} 
 			catch (RemoteException e) 
 			{
-				// do something clever like throwing a message to main thread
-				mStatus = CalculateurStatus.REJECTED;
+				displayDebugInfo("Task was rejected, adding " + mIdentifier + " to list of calculateurs that failed the task");
+				mTask.mStatus = TaskStatus.REJECTED;
 				displayDebugInfo(e.getMessage());
 			} 
 			catch (NullPointerException npe) 
 			{
-				mStatus = CalculateurStatus.REJECTED;
+				displayDebugInfo("Task was rejected, adding " + mIdentifier + " to list of calculateurs that failed the task");
+				mTask.mStatus = TaskStatus.REJECTED;
 				if (mServer == null)
 				{
 					displayDebugInfo("The server stub you tried to reach is not defined");
@@ -121,35 +127,13 @@ class CalculateurThread extends Thread
 					displayDebugInfo(npe.getMessage());
 				}
 			}
-			
-			// handle the result
-			if (mStatus == CalculateurStatus.DONE) 
-			{	
-				mResultRef.getAndAdd(res % 5000);
-				mResultRef.set(mResultRef.get() % 5000);
-				
-				if (SHOW_DEBUG_INFO)
-				{
-					displayDebugInfo("Adding " + res + " to result and applying % 5000, new current result is " + mResultRef.get());
-				}			
-			}
-			else if (mStatus == CalculateurStatus.REJECTED)  // the calculateur refused the task, do not add the result to the sum
-			{
-				synchronized(mTask) {
-					
-				}
-				if (SHOW_DEBUG_INFO)
-				{
-					displayDebugInfo("Task was rejected, adding " + mIdentifier + " to list of calculateurs that failed the task");
-				}
-			} 
+
+			mStatus = CalculateurStatus.DONE;
 			
 			synchronized(mResultRef)
 			{
 				mResultRef.notify();
 			}
-
-			mGo = false;
 		}
 	}
 	
