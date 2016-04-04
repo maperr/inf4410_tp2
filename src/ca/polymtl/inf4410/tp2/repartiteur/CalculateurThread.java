@@ -21,15 +21,12 @@ class CalculateurThread extends Thread
     
 	private ServerInterface mServer; // reference to the remote server on which the task will be done
 	private Task mTask; // task to be executed
-	private int mIdentifier;  // identifier provided by the repartiteur
 	private AtomicInteger mResultRef;
 	private CalculateurStatus mStatus;
 	
-    public CalculateurThread(ServerInterface serv, int id) 
+    public CalculateurThread(ServerInterface serv) 
     {
 		mServer = serv;
-		mIdentifier = id;
-		
 		// initialize the CalculateurThread as waiting for a task
 		mStatus = CalculateurStatus.WAITING;
 	}
@@ -66,6 +63,11 @@ class CalculateurThread extends Thread
     public boolean isOutOfOrder()
     {
     	if(!this.isAlive() && mStatus == CalculateurStatus.RUNNING) {
+    		if (SHOW_DEBUG_INFO) 
+    		{
+        		displayDebugInfo("out of order!");
+    	    }
+    		
     		mStatus = CalculateurStatus.BREAKDOWN;
     		mResultRef.notify();
     		return true;

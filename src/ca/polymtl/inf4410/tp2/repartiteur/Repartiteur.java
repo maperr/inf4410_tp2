@@ -18,6 +18,7 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,8 +35,7 @@ public class Repartiteur
 	private Boolean mIsModeSecurise;
     private List<CalculateurThread> mCalculateurThreads;
 	protected List<Task> mTasks;
-
-	private AtomicInteger mResult; // used asynchronously, use mutexes.
+	
 	
 	/*
 	 * utilisation:
@@ -81,7 +81,6 @@ public class Repartiteur
 	{
         mCalculateurs = new ArrayList<>();
         mCalculateurThreads = new ArrayList<>();
-		mResult = new AtomicInteger();
         
 		File opFile = Repartiteur.getFilePath(operationsFile).toFile();
 		mOperations = getOperationsFromFile(opFile);
@@ -127,9 +126,6 @@ public class Repartiteur
 		    System.out.println("We have " + mCalculateurs.size() + " servers.");
 		}
 		
-		mResult.set(0);
-		
-		
 		// split the operations in different tasks (group of operations) to be executed on threads
 		int nOperationByTask = (int) Math.ceil((double) mOperations.size() / (double) mCalculateurs.size());
 		List<List<Operation>> list_operations = chunk(mOperations, nOperationByTask);
@@ -141,7 +137,7 @@ public class Repartiteur
 		
 		// initialize and fill the tasks list
 		int it = 0;
-		mTasks = new ArrayList<>();
+		mTasks = Collections.synchronizedList(new ArrayList<Task>()); // synchronized list of task
 		for(List<Operation> operations : list_operations) 
 		{
 			mTasks.add(new Task(operations, it));
@@ -155,16 +151,18 @@ public class Repartiteur
 		    	System.out.println("Creating thread " + i);
 		    }
 		    
-		    CalculateurThread ct = new CalculateurThread(mCalculateurs.get(i), i);
+		    CalculateurThread ct = new CalculateurThread(mCalculateurs.get(i));
 		    mCalculateurThreads.add(ct);
 		}
 		
 		if(mIsModeSecurise) 
 		{
 			// in security mode, give the same atomic result object to all servers
+			AtomicInteger result = new AtomicInteger();
+			result.set(0);
 			for(CalculateurThread ct : mCalculateurThreads)
 			{
-				ct.setResult(mResult);
+				ct.setResult(result);
 			}
 			
 			// in security mode, send each task on a different server
@@ -173,17 +171,16 @@ public class Repartiteur
 				CalculateurThread ct = mCalculateurThreads.get(i);
 				ct.launchTask(mTasks.get(i));
 				ct.start(); // start the thread
-				mTasks.remove(mTasks.get(i));
+				mTasks.remove(mTasks.get(i)); // remove the task from the list of task
 			}
 
 			try 
 			{
+				// repartiteur loop - wait for all the tasks to be executed
+				// or for a task to be impossible to execute
 			    while (true) 
 			    {
-			    	synchronized(mTasks)
-			    	{
-			    		launchTasksOnThreads();
-			    	}
+			    	launchTasksOnThreads();
 			    	
 			    	if(impossibleTask()) 
 			    		return;
@@ -191,9 +188,9 @@ public class Repartiteur
 			    	if(allTasksFinished())
 			    		return;
 			    	
-			    	synchronized(mResult)
+			    	synchronized(result)
 			    	{
-			    		mResult.wait();
+			    		result.wait();
 			    	}
 			    }
 			} 
@@ -202,7 +199,7 @@ public class Repartiteur
 			    System.out.println(e.getMessage());
 			}
 			
-			System.out.println("Final result is " + mResult.get());
+			System.out.println("Final result is " + result.get());
 		}
 		else 
 		{
@@ -213,7 +210,7 @@ public class Repartiteur
 			for(CalculateurThread ct : mCalculateurThreads)
 			{
 				AtomicInteger ai = new AtomicInteger();
-				ai.set(0);
+				ai.set(-1);
 				results.add(ai);
 				ct.setResult(ai);
 			}
@@ -228,7 +225,8 @@ public class Repartiteur
 					ct.start();
 				}
 				
-				while(!allTasksFinished()) { }
+				// wait for all tasks to be executed on their respective server
+				while(!allTasksFinished()) { } 
 				
 				// remove failed tasks
 				for(AtomicInteger ai : results) {
