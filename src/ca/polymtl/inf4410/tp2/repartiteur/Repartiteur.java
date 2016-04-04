@@ -319,7 +319,7 @@ public class Repartiteur
 		}
     }
 
-    // version modifiée de source: http://stackoverflow.com/a/31177643
+    // version modif de source: http://stackoverflow.com/a/31177643
     private int[] getHighestNumberOfDuplicates(List<AtomicInteger> list)
     {
 		int it = 0;
