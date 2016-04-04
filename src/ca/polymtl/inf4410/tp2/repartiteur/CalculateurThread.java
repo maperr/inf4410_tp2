@@ -64,7 +64,9 @@ class CalculateurThread extends Thread
 	    }
 		mTask = t;
 		mTask.mStatus = TaskStatus.RUNNING;
-		mTask.notify();
+		synchronized(mTask) {
+			mTask.notify();
+		}
     }
     
     /*public boolean isOutOfOrder() // TODO (need to check if the calculateur is dead)
