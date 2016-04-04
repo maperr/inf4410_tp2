@@ -196,8 +196,7 @@ public class Repartiteur
 		    }
 			
 			
-			System.out.println("Final result is " + result.get());
-			return;
+			System.out.println("Final result is " + result.get() + "\n Execution over.");
 		}
 		else 
 		{

@@ -18,7 +18,7 @@ class CalculateurThread extends Thread
     
 	public static enum CalculateurStatus
 	{
-		WAITING, RUNNING, DONE, BREAKDOWN
+		WAITING, RUNNING, BREAKDOWN
 	}
     
 	private ServerInterface mServer; // reference to the remote server on which the task will be done
@@ -119,13 +119,15 @@ class CalculateurThread extends Thread
 			} 
 			catch (RemoteException e) 
 			{
-				displayDebugInfo("Task was rejected, adding " + mIdentifier + " to list of calculateurs that failed the task");
+				displayDebugInfo("Task was rejected, adding calculateur " + mIdentifier + " to list of calculateurs that failed the task");
+				mTask.mUnfitThreads.add(this);
 				mTask.mStatus = TaskStatus.REJECTED;
 				displayDebugInfo(e.getMessage());
 			} 
 			catch (NullPointerException npe) 
 			{
 				displayDebugInfo("Task was rejected, adding " + mIdentifier + " to list of calculateurs that failed the task");
+				mTask.mUnfitThreads.add(this);
 				mTask.mStatus = TaskStatus.REJECTED;
 				if (mServer == null)
 				{
@@ -137,7 +139,7 @@ class CalculateurThread extends Thread
 				}
 			}
 
-			mStatus = CalculateurStatus.DONE;
+			mStatus = CalculateurStatus.WAITING;
 			
 			synchronized(mResultRef)
 			{
