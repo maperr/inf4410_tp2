@@ -27,12 +27,13 @@ class CalculateurThread extends Thread
 	private int mIdentifier;
 	public Task mTask; // task to be executed
 	
-    public CalculateurThread(int id, ServerInterface serv) 
+    public CalculateurThread(int id, ServerInterface serv, Task t) 
     {
     	mIdentifier = id;
 		mServer = serv;
 		// initialize the CalculateurThread as waiting for a task
 		mStatus = CalculateurStatus.WAITING;
+		mTask = t;
 	}
     
     public CalculateurStatus getStatus()
