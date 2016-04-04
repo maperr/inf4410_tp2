@@ -216,9 +216,9 @@ public class Repartiteur
 			}
 			
 			// in unsecured mode, send a task to all servers
+			boolean firstRun = true;
 			for(Task t : mTasks) 
 			{
-				boolean firstRun = true;
 				// launch the tasks
 				for(CalculateurThread ct : mCalculateurThreads)
 				{
@@ -252,6 +252,7 @@ public class Repartiteur
 					break;
 				}
 				sum += value;
+				System.out.println("The servers have agreed on result " + value + ". The sum is now " + sum );
 			}
 		}
 		
