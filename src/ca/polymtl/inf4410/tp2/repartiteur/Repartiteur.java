@@ -218,12 +218,17 @@ public class Repartiteur
 			// in unsecured mode, send a task to all servers
 			for(Task t : mTasks) 
 			{
+				boolean firstRun = true;
 				// launch the tasks
 				for(CalculateurThread ct : mCalculateurThreads)
 				{
 					ct.launchTask(t);
-					ct.run();
+					if(firstRun)
+						ct.start();
+					else
+						ct.run();
 				}
+				firstRun = false;
 				
 				// wait for all tasks to be executed on their respective server
 				while(!allTasksFinished()) { } 
