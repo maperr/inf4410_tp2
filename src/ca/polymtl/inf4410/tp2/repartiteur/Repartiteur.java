@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -292,9 +293,10 @@ public class Repartiteur
 	
 	private void launchTasksOnThreads()
 	{
-		for(Task t : mTasks) 
+		for (Iterator<Task> iterator = mTasks.iterator(); iterator.hasNext(); ) 
 		{
-			for(CalculateurThread ct : mCalculateurThreads)
+		    Task t = iterator.next();
+		    for(CalculateurThread ct : mCalculateurThreads)
 			{
 				if(ct.getStatus() == CalculateurStatus.REJECTED)
 				{
@@ -310,7 +312,7 @@ public class Repartiteur
 				{
 					ct.launchTask(t);
 					ct.run();
-					mTasks.remove(t);
+					iterator.remove();
 				}
 			}
 		}

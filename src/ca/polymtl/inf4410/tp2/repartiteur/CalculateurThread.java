@@ -127,7 +127,7 @@ class CalculateurThread extends Thread
 		else if (mStatus == CalculateurStatus.REJECTED)  // the calculateur refused the task, do not add the result to the sum
 		{
 			synchronized(mTask) {
-				mTask.mUnfitThreads.add(this);
+				
 			}
 			if (SHOW_DEBUG_INFO)
 			{
