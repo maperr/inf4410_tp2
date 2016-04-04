@@ -24,6 +24,7 @@ class CalculateurThread extends Thread
 	private AtomicInteger mResultRef;
 	private CalculateurStatus mStatus;
 	private int mIdentifier;
+	private boolean mGo;
 	
     public CalculateurThread(int id, ServerInterface serv) 
     {
@@ -31,6 +32,8 @@ class CalculateurThread extends Thread
 		mServer = serv;
 		// initialize the CalculateurThread as waiting for a task
 		mStatus = CalculateurStatus.WAITING;
+		// don't start execution on thead until, it has a task
+		mGo = false;
 	}
     
     public CalculateurStatus getStatus()
@@ -60,6 +63,7 @@ class CalculateurThread extends Thread
 			displayDebugInfo("Associated with task " + t.mId);
 	    }
 		mTask = t;
+		mGo = true;
     }
     
     public boolean isOutOfOrder()
@@ -80,64 +84,72 @@ class CalculateurThread extends Thread
 	@Override
 	public void run()
 	{
-		mStatus = CalculateurStatus.RUNNING;
-		
-		if (SHOW_DEBUG_INFO) 
+		// main thread loop, each loop executes a task on the server.
+		while(true)
 		{
-			displayDebugInfo("I have been started work on task #" + mTask.mId + " of " + mTask.mOperations.size() + " operations");
-	    }
-		
-		int res = -1;		
-		
-		try 
-		{
-			res = mServer.executeTask(mTask.mOperations);
-			mStatus = CalculateurStatus.DONE;
-		} 
-		catch (RemoteException e) 
-		{
-			// do something clever like throwing a message to main thread
-			mStatus = CalculateurStatus.REJECTED;
-			displayDebugInfo(e.getMessage());
-		} 
-		catch (NullPointerException npe) 
-		{
-			mStatus = CalculateurStatus.REJECTED;
-			if (mServer == null)
-			{
-				displayDebugInfo("The server stub you tried to reach is not defined");
-			}
-			else
-			{
-				displayDebugInfo(npe.getMessage());
-			}
-		}
-		
-		// handle the result
-		if (mStatus == CalculateurStatus.DONE) 
-		{	
-			mResultRef.getAndAdd(res % 5000);
-			mResultRef.set(mResultRef.get() % 5000);
+			while(mGo == false) {}
 			
-			if (SHOW_DEBUG_INFO)
+			mStatus = CalculateurStatus.RUNNING;
+			
+			if (SHOW_DEBUG_INFO) 
 			{
-				displayDebugInfo("Adding " + res + " to result and applying % 5000, new current result is " + mResultRef.get());
-			}			
-		}
-		else if (mStatus == CalculateurStatus.REJECTED)  // the calculateur refused the task, do not add the result to the sum
-		{
-			synchronized(mTask) {
+				displayDebugInfo("I have been started work on task #" + mTask.mId + " of " + mTask.mOperations.size() + " operations");
+		    }
+			
+			int res = -1;		
+			
+			try 
+			{
+				res = mServer.executeTask(mTask.mOperations);
+				mStatus = CalculateurStatus.DONE;
+			} 
+			catch (RemoteException e) 
+			{
+				// do something clever like throwing a message to main thread
+				mStatus = CalculateurStatus.REJECTED;
+				displayDebugInfo(e.getMessage());
+			} 
+			catch (NullPointerException npe) 
+			{
+				mStatus = CalculateurStatus.REJECTED;
+				if (mServer == null)
+				{
+					displayDebugInfo("The server stub you tried to reach is not defined");
+				}
+				else
+				{
+					displayDebugInfo(npe.getMessage());
+				}
+			}
+			
+			// handle the result
+			if (mStatus == CalculateurStatus.DONE) 
+			{	
+				mResultRef.getAndAdd(res % 5000);
+				mResultRef.set(mResultRef.get() % 5000);
 				
+				if (SHOW_DEBUG_INFO)
+				{
+					displayDebugInfo("Adding " + res + " to result and applying % 5000, new current result is " + mResultRef.get());
+				}			
 			}
-			if (SHOW_DEBUG_INFO)
+			else if (mStatus == CalculateurStatus.REJECTED)  // the calculateur refused the task, do not add the result to the sum
 			{
-				displayDebugInfo("Task was rejected, adding " + mIdentifier + " to list of calculateurs that failed the task");
+				synchronized(mTask) {
+					
+				}
+				if (SHOW_DEBUG_INFO)
+				{
+					displayDebugInfo("Task was rejected, adding " + mIdentifier + " to list of calculateurs that failed the task");
+				}
+			} 
+			
+			synchronized(mResultRef)
+			{
+				mResultRef.notify();
 			}
-		} 
 
-		synchronized(mResultRef)
-		{
-			mResultRef.notify();
+			mGo = false;
 		}
 	}
 	

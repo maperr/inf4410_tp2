@@ -142,6 +142,7 @@ public class Repartiteur
 		for(List<Operation> operations : list_operations) 
 		{
 			mTasks.add(new Task(operations, it));
+			it++;
 		}
 		
 		// for each server, initialize its associated thread
@@ -154,6 +155,7 @@ public class Repartiteur
 		    
 		    CalculateurThread ct = new CalculateurThread(i, mCalculateurs.get(i));
 		    mCalculateurThreads.add(ct);
+		    ct.start(); // thread will wait for a task input
 		}
 		
 		if(mIsModeSecurise) 
@@ -171,7 +173,6 @@ public class Repartiteur
 			{
 				CalculateurThread ct = mCalculateurThreads.get(i);
 				ct.launchTask(mTasks.get(i));
-				ct.start(); // start the thread
 				mTasks.remove(mTasks.get(i)); // remove the task from the list of task
 			}
 
@@ -224,10 +225,6 @@ public class Repartiteur
 				for(CalculateurThread ct : mCalculateurThreads)
 				{
 					ct.launchTask(t);
-					if(firstRun)
-						ct.start();
-					else
-						ct.run();
 				}
 				firstRun = false;
 				
