@@ -180,13 +180,13 @@ public class Repartiteur
 				// or for a task to be impossible to execute
 			    while (true) 
 			    {
-			    	launchTasksOnThreads();
-			    	
 			    	if(impossibleTask()) 
 			    		return;
 			    	
 			    	if(allTasksFinished())
 			    		return;
+			    	
+			    	launchTasksOnThreads();
 			    	
 			    	synchronized(result)
 			    	{
@@ -251,7 +251,7 @@ public class Repartiteur
 					System.out.println("The servers are not secure, we received too many invalid results\n Ending program.");
 					break;
 				}
-				sum += value;
+				sum = (sum + value) % 5000;
 				System.out.println("The servers have agreed on result " + value + ". The sum is now " + sum );
 			}
 		}
