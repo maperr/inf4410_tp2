@@ -180,7 +180,10 @@ public class Repartiteur
 			{
 			    while (true) 
 			    {
-			    	launchTasksOnThreads();
+			    	synchronized(mTasks)
+			    	{
+			    		launchTasksOnThreads();
+			    	}
 			    	
 			    	if(impossibleTask()) 
 			    		return;
