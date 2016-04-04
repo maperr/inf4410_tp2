@@ -65,7 +65,7 @@ public class Calculateur implements ServerInterface
 		if(isRefused(x.size())) 
 		{
 			System.out.println("A task was refused.");
-			throw new RemoteException("Task refused!");
+			throw new RemoteException("Task refused by server!");
 		}
 		
 		if(isMalicious())

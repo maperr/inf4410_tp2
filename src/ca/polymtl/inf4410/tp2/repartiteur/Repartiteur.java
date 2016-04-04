@@ -187,7 +187,7 @@ public class Repartiteur
 		    while (true) 
 		    {
 		    	if(impossibleTask()) 
-		    		break;
+		    		return;
 		    	
 		    	if(allTasksFinished())
 		    		break;
@@ -281,7 +281,7 @@ public class Repartiteur
 		{
 			if (t.mUnfitThreads.size() == mCalculateurThreads.size()) 
 			{
-				System.out.println("Task " + t.mId + " has too many operations to be executed on any of the servers.\n Exiting.");
+				System.out.println("Task " + t.mId + " was refused on all servers.\n Exiting.");
 				return true;
 			}
 		}

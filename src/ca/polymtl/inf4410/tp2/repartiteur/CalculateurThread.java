@@ -119,8 +119,12 @@ class CalculateurThread extends Thread
 			} 
 			catch (RemoteException e) 
 			{
+				if(mTask.mUnfitThreads.contains(this)) {
+					displayDebugInfo("WHAT THE FUCK");
+				}
 				displayDebugInfo("Task was rejected, adding calculateur " + mIdentifier + " to list of calculateurs that failed the task");
 				mTask.mUnfitThreads.add(this);
+				
 				mTask.mStatus = TaskStatus.REJECTED;
 				displayDebugInfo(e.getMessage());
 			} 
