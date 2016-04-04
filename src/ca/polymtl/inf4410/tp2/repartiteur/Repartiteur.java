@@ -141,6 +141,11 @@ public class Repartiteur
 		mTasks = Collections.synchronizedList(new ArrayList<Task>()); // synchronized list of task
 		for(List<Operation> operations : list_operations) 
 		{
+			if (SHOW_DEBUG_INFO)
+		    {
+		    	System.out.println("Creating task " + it);
+		    }
+			
 			mTasks.add(new Task(operations, it));
 			it++;
 		}
