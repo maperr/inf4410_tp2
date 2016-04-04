@@ -222,7 +222,7 @@ public class Repartiteur
 				for(CalculateurThread ct : mCalculateurThreads)
 				{
 					ct.launchTask(t);
-					ct.start();
+					ct.run();
 				}
 				
 				// wait for all tasks to be executed on their respective server
