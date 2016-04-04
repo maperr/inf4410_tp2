@@ -139,7 +139,7 @@ public class Repartiteur
 		
 		// initialize and fill the tasks list
 		int it = 0;
-		mTasks = Collections.synchronizedList(new ArrayList<Task>()); // synchronized list of task
+		mTasks = new ArrayList<Task>(); // synchronized list of task
 		for(List<Operation> operations : list_operations) 
 		{
 			if (SHOW_DEBUG_INFO)
@@ -181,30 +181,20 @@ public class Repartiteur
 				ct.launchTask(mTasks.get(i));
 			}
 			
-			try 
-			{
-				// repartiteur loop - wait for all the tasks to be executed
-				// or for a task to be impossible to execute
-			    while (true) 
-			    {
-			    	if(impossibleTask()) 
-			    		return;
-			    	
-			    	if(allTasksFinished())
-			    		return;
-			    	
-			    	launchRejectedTasksOnThreads();
-			    	
-			    	synchronized(result)
-			    	{
-			    		result.wait();
-			    	}
-			    }
-			} 
-			catch (InterruptedException e) 
-			{
-			    System.out.println(e.getMessage());
-			}
+			
+			// repartiteur loop - wait for all the tasks to be executed
+			// or for a task to be impossible to execute
+		    while (true) 
+		    {
+		    	if(impossibleTask()) 
+		    		break;
+		    	
+		    	if(allTasksFinished())
+		    		break;
+		    	
+		    	launchRejectedTasksOnThreads();
+		    }
+			
 			
 			System.out.println("Final result is " + result.get());
 		}

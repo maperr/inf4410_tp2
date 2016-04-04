@@ -106,12 +106,15 @@ class CalculateurThread extends Thread
 			try 
 			{
 				res = mServer.executeTask(mTask.mOperations);
+				
+				mResultRef.getAndAdd(res % 5000);
+				mResultRef.set(mResultRef.get() % 5000);
+				
 				if (SHOW_DEBUG_INFO)
 				{
 					displayDebugInfo("Adding " + res + " to result and applying % 5000, new current result is " + mResultRef.get());
 				}
-				mResultRef.getAndAdd(res % 5000);
-				mResultRef.set(mResultRef.get() % 5000);
+				
 				mTask.mStatus = TaskStatus.DONE;
 			} 
 			catch (RemoteException e) 
