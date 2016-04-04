@@ -23,9 +23,11 @@ class CalculateurThread extends Thread
 	private Task mTask; // task to be executed
 	private AtomicInteger mResultRef;
 	private CalculateurStatus mStatus;
+	private int mIdentifier;
 	
-    public CalculateurThread(ServerInterface serv) 
+    public CalculateurThread(int id, ServerInterface serv) 
     {
+    	mIdentifier = id;
 		mServer = serv;
 		// initialize the CalculateurThread as waiting for a task
 		mStatus = CalculateurStatus.WAITING;

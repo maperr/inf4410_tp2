@@ -151,7 +151,7 @@ public class Repartiteur
 		    	System.out.println("Creating thread " + i);
 		    }
 		    
-		    CalculateurThread ct = new CalculateurThread(mCalculateurs.get(i));
+		    CalculateurThread ct = new CalculateurThread(i, mCalculateurs.get(i));
 		    mCalculateurThreads.add(ct);
 		}
 		
