@@ -173,9 +173,10 @@ public class Repartiteur
 			{
 				CalculateurThread ct = mCalculateurThreads.get(i);
 				ct.launchTask(mTasks.get(i));
-				mTasks.remove(mTasks.get(i)); // remove the task from the list of task
 			}
-
+			// clear the list of tasks
+			mTasks.clear();
+			
 			try 
 			{
 				// repartiteur loop - wait for all the tasks to be executed
@@ -218,7 +219,6 @@ public class Repartiteur
 			}
 			
 			// in unsecured mode, send a task to all servers
-			boolean firstRun = true;
 			for(Task t : mTasks) 
 			{
 				// launch the tasks
@@ -226,7 +226,6 @@ public class Repartiteur
 				{
 					ct.launchTask(t);
 				}
-				firstRun = false;
 				
 				// wait for all tasks to be executed on their respective server
 				while(!allTasksFinished()) { } 
