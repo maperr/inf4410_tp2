@@ -237,6 +237,9 @@ public class Repartiteur
 				for(AtomicInteger ai : results) {
 					if(ai.get() == -1) 
 						results.remove(ai);
+					else if (SHOW_DEBUG_INFO) {
+						System.out.println("Received result " + ai.get() );
+					}
 				}
 				
 				int majority = (int)( mCalculateurThreads.size() / 2 ) + 1;
