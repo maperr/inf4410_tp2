@@ -8,8 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Observable;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import ca.polymtl.inf4410.tp2.repartiteur.Task.TaskStatus;
 import ca.polymtl.inf4410.tp2.shared.*;
 
 class CalculateurThread extends Thread
@@ -41,7 +39,7 @@ class CalculateurThread extends Thread
     	return mStatus;
     }
     
-    public CalculateurStatus setStatus(CalculateurStatus st)
+    public void setStatus(CalculateurStatus st)
     {
     	mStatus = st;
     }
