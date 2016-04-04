@@ -197,6 +197,7 @@ public class Repartiteur
 			
 			
 			System.out.println("Final result is " + result.get());
+			return;
 		}
 		else 
 		{
